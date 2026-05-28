@@ -83,7 +83,7 @@ export default function Phases() {
             return (
               <button
                 key={phase.id}
-                className="phase-item"
+                className={`phase-item status-${phase.status}`}
                 onClick={() => cycleStatus(phase)}
                 style={{ '--phase-color': meta.color, '--phase-bg': meta.bg }}
               >
