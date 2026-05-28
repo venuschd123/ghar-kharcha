@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { getToday, getYesterday, formatCurrency, formatDateShort } from '../utils/formatters';
-import { ArrowLeft, Camera, Trash2, Check, X } from 'lucide-react';
+import { ArrowLeft, Camera, Trash2, Check, Keyboard } from 'lucide-react';
 import Numpad from '../components/Numpad';
 
 export default function AddExpense() {
@@ -21,7 +21,9 @@ export default function AddExpense() {
   const [photo, setPhoto] = useState(null);
   const [editProjectId, setEditProjectId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [useKeyboard, setUseKeyboard] = useState(false);
   const fileRef = useRef();
+  const kbInputRef = useRef();
 
   const projectId = isEdit ? editProjectId : (projects?.[0]?.id ?? null);
 
@@ -102,8 +104,15 @@ export default function AddExpense() {
     ? Number(amount).toLocaleString('en-IN', { maximumFractionDigits: 2 })
     : '0';
 
+  const toggleKeyboard = () => {
+    setUseKeyboard(v => {
+      if (!v) setTimeout(() => kbInputRef.current?.focus(), 50);
+      return !v;
+    });
+  };
+
   return (
-    <div className="page add-expense-page">
+    <div className={`page add-expense-page${useKeyboard ? ' mode-keyboard' : ''}`}>
       {/* Header */}
       <header className="page-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
@@ -121,7 +130,19 @@ export default function AddExpense() {
       <div className="amount-area">
         <div className="amount-row">
           <span className="amount-rs">₹</span>
-          <span className={`amount-num${amount ? ' filled' : ''}`}>{displayAmount}</span>
+          {useKeyboard ? (
+            <input
+              ref={kbInputRef}
+              type="number"
+              className="amount-input-kb"
+              placeholder="0"
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              inputMode="decimal"
+            />
+          ) : (
+            <span className={`amount-num${amount ? ' filled' : ''}`}>{displayAmount}</span>
+          )}
         </div>
         <div className="amount-cat-row">
           {selectedCat ? (
@@ -131,6 +152,13 @@ export default function AddExpense() {
           ) : (
             <div className="amount-chip-empty">Pick a category ↓</div>
           )}
+          <button
+            className={`kb-toggle${useKeyboard ? ' active' : ''}`}
+            onClick={toggleKeyboard}
+            title={useKeyboard ? 'Switch to numpad' : 'Switch to keyboard'}
+          >
+            <Keyboard size={14} />
+          </button>
         </div>
       </div>
 
@@ -201,10 +229,12 @@ export default function AddExpense() {
         </button>
       </div>
 
-      {/* Numpad */}
-      <div className="numpad-wrap">
-        <Numpad value={amount} onChange={setAmount} />
-      </div>
+      {/* Numpad (hidden in keyboard mode) */}
+      {!useKeyboard && (
+        <div className="numpad-wrap">
+          <Numpad value={amount} onChange={setAmount} />
+        </div>
+      )}
 
       {/* Save */}
       <div className="save-bar">
