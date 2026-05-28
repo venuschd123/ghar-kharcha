@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
-import { getToday } from '../utils/formatters';
-import { Camera, X, Check, Trash2, ArrowLeft } from 'lucide-react';
+import { getToday, getYesterday, formatCurrency, formatDateShort } from '../utils/formatters';
+import { ArrowLeft, Camera, Trash2, Check, X } from 'lucide-react';
+import Numpad from '../components/Numpad';
 
 export default function AddExpense() {
   const navigate = useNavigate();
@@ -20,9 +21,9 @@ export default function AddExpense() {
   const [photo, setPhoto] = useState(null);
   const [editProjectId, setEditProjectId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const fileRef = useRef();
 
   const projectId = isEdit ? editProjectId : (projects?.[0]?.id ?? null);
-  const fileRef = useRef();
 
   useEffect(() => {
     if (isEdit && id) {
@@ -43,16 +44,16 @@ export default function AddExpense() {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = ev => {
       const img = new Image();
       img.onload = () => {
-        const canvas = document.createElement('canvas');
         const MAX = 800;
         let w = img.width, h = img.height;
         if (w > MAX || h > MAX) {
           if (w > h) { h = (h * MAX) / w; w = MAX; }
           else { w = (w * MAX) / h; h = MAX; }
         }
+        const canvas = document.createElement('canvas');
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
         setPhoto(canvas.toDataURL('image/jpeg', 0.7));
@@ -90,108 +91,133 @@ export default function AddExpense() {
 
   if (!categories || !projects) return <div className="page-loading">Loading…</div>;
 
+  const selectedCat = categories.find(c => c.id === categoryId);
   const isValid = amount && parseFloat(amount) > 0 && categoryId && projectId;
 
+  const today = getToday();
+  const yesterday = getYesterday();
+  const dateLabel = date === today ? 'Today' : date === yesterday ? 'Yesterday' : formatDateShort(date);
+
+  const displayAmount = amount
+    ? Number(amount).toLocaleString('en-IN', { maximumFractionDigits: 2 })
+    : '0';
+
   return (
-    <div className="page add-expense">
+    <div className="page add-expense-page">
+      {/* Header */}
       <header className="page-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
           <ArrowLeft size={20} />
         </button>
-        <h1 className="page-title">{isEdit ? 'Edit Expense' : 'Add Expense'}</h1>
+        <span className="page-title">{isEdit ? 'Edit Expense' : 'Add Expense'}</span>
         {isEdit ? (
           <button className="delete-btn" onClick={handleDelete}>
             <Trash2 size={18} />
           </button>
-        ) : <div style={{ width: 40 }} />}
+        ) : <div style={{ width: 38 }} />}
       </header>
 
-      {/* Amount */}
-      <div className="amount-section">
-        <span className="rupee-sign">₹</span>
-        <input
-          type="number"
-          className="amount-input"
-          placeholder="0"
-          value={amount}
-          onChange={e => setAmount(e.target.value)}
-          inputMode="numeric"
-          autoFocus
-        />
-      </div>
-
-      {/* Category Tiles */}
-      <div className="form-section" style={{ marginTop: 24 }}>
-        <label className="form-label">Category</label>
-        <div className="category-grid">
-          {categories.map(cat => {
-            const selected = categoryId === cat.id;
-            return (
-              <button
-                key={cat.id}
-                className={`cat-tile ${selected ? 'selected' : ''}`}
-                style={{
-                  '--cat-color': cat.color,
-                  '--cat-bg': cat.color + '18',
-                }}
-                onClick={() => setCategoryId(cat.id)}
-              >
-                <span className="cat-tile-icon">{cat.icon}</span>
-                <span className="cat-tile-name">{cat.name}</span>
-              </button>
-            );
-          })}
+      {/* Amount display */}
+      <div className="amount-area">
+        <div className="amount-row">
+          <span className="amount-rs">₹</span>
+          <span className={`amount-num${amount ? ' filled' : ''}`}>{displayAmount}</span>
+        </div>
+        <div className="amount-cat-row">
+          {selectedCat ? (
+            <div className="amount-chip">
+              {selectedCat.icon} {selectedCat.name}
+            </div>
+          ) : (
+            <div className="amount-chip-empty">Pick a category ↓</div>
+          )}
         </div>
       </div>
 
-      {/* Date */}
-      <div className="form-section">
-        <label className="form-label">Date</label>
-        <input
-          type="date"
-          className="form-input"
-          value={date}
-          onChange={e => setDate(e.target.value)}
-        />
+      {/* Category scroll */}
+      <div className="cat-scroll-wrap">
+        <div className="cat-scroll">
+          {categories.map(cat => (
+            <button
+              key={cat.id}
+              className={`cat-pill${categoryId === cat.id ? ' active' : ''}`}
+              onClick={() => setCategoryId(cat.id)}
+              style={categoryId === cat.id ? { '--cat-c': cat.color } : {}}
+            >
+              <span className="cat-pill-icon">{cat.icon}</span>
+              <span>{cat.name.split(' ')[0]}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Note */}
-      <div className="form-section">
-        <label className="form-label">Note (optional)</label>
+      {/* Date + Note + Camera */}
+      <div className="options-bar">
+        <button
+          className={`date-chip${date === today ? ' active' : ''}`}
+          onClick={() => setDate(today)}
+        >
+          Today
+        </button>
+        <button
+          className={`date-chip${date === yesterday ? ' active' : ''}`}
+          onClick={() => setDate(yesterday)}
+        >
+          Yest.
+        </button>
+        <div className="date-custom-wrap">
+          <button className={`date-chip${date !== today && date !== yesterday ? ' active' : ''}`}>
+            {date !== today && date !== yesterday ? dateLabel : '📅'}
+          </button>
+          <input
+            type="date"
+            className="date-custom-input"
+            value={date}
+            onChange={e => setDate(e.target.value)}
+          />
+        </div>
         <input
           type="text"
-          className="form-input"
-          placeholder="e.g. Paid to Raju Mistri for 2nd floor"
+          className="note-input"
+          placeholder="Note…"
           value={note}
           onChange={e => setNote(e.target.value)}
           maxLength={200}
         />
+        <button
+          className={`camera-btn${photo ? ' has-photo' : ''}`}
+          onClick={() => photo ? setPhoto(null) : fileRef.current?.click()}
+          title={photo ? 'Remove photo' : 'Add receipt photo'}
+        >
+          {photo ? <Check size={16} /> : <Camera size={16} />}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handlePhoto}
+            className="camera-file"
+          />
+        </button>
       </div>
 
-      {/* Photo */}
-      <div className="form-section">
-        <label className="form-label">Receipt Photo (optional)</label>
-        {photo ? (
-          <div className="photo-preview">
-            <img src={photo} alt="Receipt" />
-            <button className="photo-remove" onClick={() => setPhoto(null)}>
-              <X size={16} />
-            </button>
-          </div>
-        ) : (
-          <button className="photo-btn" onClick={() => fileRef.current?.click()}>
-            <Camera size={20} />
-            <span>Capture or Upload Receipt</span>
-          </button>
-        )}
-        <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{ display: 'none' }} />
+      {/* Numpad */}
+      <div className="numpad-wrap">
+        <Numpad value={amount} onChange={setAmount} />
       </div>
 
       {/* Save */}
-      <div className="form-actions">
-        <button className="btn btn-primary btn-full" onClick={handleSave} disabled={!isValid || saving}>
+      <div className="save-bar">
+        <button
+          className="btn btn-primary btn-full btn-lg"
+          onClick={handleSave}
+          disabled={!isValid || saving}
+        >
           <Check size={18} />
-          {saving ? 'Saving…' : isEdit ? 'Update Expense' : 'Save Expense'}
+          {saving ? 'Saving…' : isEdit
+            ? `Update — ${formatCurrency(parseFloat(amount) || 0)}`
+            : `Save — ${formatCurrency(parseFloat(amount) || 0)}`
+          }
         </button>
       </div>
     </div>

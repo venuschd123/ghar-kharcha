@@ -1,8 +1,29 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
-import { formatCurrency, formatDate, groupByCategory } from '../utils/formatters';
-import { TrendingUp, Wallet, ReceiptIndianRupee, PlusCircle, ArrowRight } from 'lucide-react';
+import { formatCurrency, formatCompact, formatDate, formatDateLabel, groupByCategory, getToday, getDaysAgo } from '../utils/formatters';
+import { PlusCircle, ArrowRight, Settings } from 'lucide-react';
+
+const RING_R = 46;
+const CIRC = 2 * Math.PI * RING_R;
+
+function BudgetRing({ pct, color }) {
+  const offset = CIRC * (1 - Math.min(pct, 100) / 100);
+  return (
+    <svg width="120" height="120" viewBox="0 0 120 120">
+      <circle cx="60" cy="60" r={RING_R} fill="none" stroke="var(--surface)" strokeWidth="10" />
+      <circle
+        cx="60" cy="60" r={RING_R} fill="none"
+        stroke={color} strokeWidth="10"
+        strokeDasharray={CIRC}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        transform="rotate(-90 60 60)"
+        style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1), stroke 0.4s ease' }}
+      />
+    </svg>
+  );
+}
 
 export default function Dashboard() {
   const projects = useLiveQuery(() => db.projects.toArray());
@@ -10,9 +31,7 @@ export default function Dashboard() {
   const activeProject = projects?.[0] ?? null;
 
   const expenses = useLiveQuery(
-    () => activeProject
-      ? db.expenses.where('projectId').equals(activeProject.id).toArray()
-      : [],
+    () => activeProject ? db.expenses.where('projectId').equals(activeProject.id).toArray() : [],
     [activeProject?.id],
     []
   );
@@ -21,117 +40,124 @@ export default function Dashboard() {
     return <div className="page-loading">Loading…</div>;
   }
 
-  const recentExpenses = [...expenses]
-    .sort((a, b) => {
-      const d = new Date(b.date) - new Date(a.date);
-      return d !== 0 ? d : b.id - a.id;
-    })
-    .slice(0, 5);
-
   const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
   const budget = activeProject.budget || 0;
   const remaining = budget - totalSpent;
-  const percentUsed = budget > 0 ? Math.min((totalSpent / budget) * 100, 100) : 0;
-  const categoryBreakdown = groupByCategory(expenses, categories);
+  const pct = budget > 0 ? (totalSpent / budget) * 100 : 0;
+  const ringColor = pct > 90 ? 'var(--danger)' : pct > 70 ? 'var(--gold)' : 'var(--accent)';
 
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  const weekStr = weekAgo.toISOString().split('T')[0];
-  const thisWeek = expenses.filter(e => e.date >= weekStr).reduce((s, e) => s + e.amount, 0);
-
-  const today = new Date().toISOString().split('T')[0];
+  const today = getToday();
+  const weekAgo = getDaysAgo(7);
   const todaySpent = expenses.filter(e => e.date === today).reduce((s, e) => s + e.amount, 0);
+  const weekSpent = expenses.filter(e => e.date >= weekAgo).reduce((s, e) => s + e.amount, 0);
 
-  const budgetColor = percentUsed > 90 ? '#ff5f5f' : percentUsed > 70 ? '#f5a623' : '#00d4a0';
+  const categoryBreakdown = groupByCategory(expenses, categories);
+  const recentExpenses = [...expenses]
+    .sort((a, b) => b.date !== a.date ? b.date.localeCompare(a.date) : (b.id - a.id))
+    .slice(0, 5);
 
   return (
     <div className="page dashboard">
-      <header className="page-header">
+      {/* Header */}
+      <div className="dash-header">
         <div>
-          <h1 className="page-title">Ghar Kharcha</h1>
-          <p className="page-subtitle">{activeProject.name}</p>
+          <div className="dash-title">Ghar Kharcha</div>
+          <div className="dash-project">{activeProject.name}</div>
         </div>
-        <Link to="/add" className="header-action">
-          <PlusCircle size={22} />
+        <Link to="/settings" className="header-action">
+          <Settings size={18} />
         </Link>
-      </header>
-
-      {/* Hero Card */}
-      <div className="hero-card">
-        <div className="hero-badge">Total Spent</div>
-        <div className="hero-amount">{formatCurrency(totalSpent)}</div>
-
-        {budget > 0 ? (
-          <>
-            <div className="budget-bar">
-              <div
-                className="budget-fill"
-                style={{ width: `${percentUsed}%`, background: budgetColor }}
-              />
-            </div>
-            <div className="budget-info">
-              <span>Budget {formatCurrency(budget)}</span>
-              <span style={{ color: remaining < 0 ? '#ff5f5f' : '#00d4a0', fontWeight: 700 }}>
-                {remaining < 0 ? `₹${Math.abs(remaining).toLocaleString('en-IN')} over` : `${formatCurrency(remaining)} left`}
-              </span>
-            </div>
-          </>
-        ) : (
-          <Link to="/settings" className="set-budget-link">
-            Set a budget →
-          </Link>
-        )}
       </div>
 
-      {/* Quick Stats */}
+      {/* Hero card */}
+      {budget > 0 ? (
+        <div className="hero-card">
+          <div className="hero-ring">
+            <BudgetRing pct={pct} color={ringColor} />
+            <div className="hero-ring-center">
+              <div className="hero-ring-pct" style={{ color: ringColor }}>{Math.round(pct)}%</div>
+              <div className="hero-ring-label">used</div>
+            </div>
+          </div>
+          <div className="hero-info">
+            <div className="hero-eyebrow">Total Spent</div>
+            <div className="hero-amount">{formatCompact(totalSpent)}</div>
+            <div className="hero-rows">
+              <div className="hero-row">
+                <span className="hero-row-label">Budget</span>
+                <span className="hero-row-val">{formatCompact(budget)}</span>
+              </div>
+              <div className="hero-row">
+                <span className="hero-row-label">Remaining</span>
+                <span className="hero-row-val" style={{ color: remaining < 0 ? 'var(--danger)' : 'var(--green)' }}>
+                  {remaining < 0
+                    ? `${formatCompact(Math.abs(remaining))} over`
+                    : formatCompact(remaining)
+                  }
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="hero-card-simple">
+          <div className="hero-eyebrow">Total Spent</div>
+          <div className="hero-amount">{formatCurrency(totalSpent)}</div>
+          <Link to="/settings" className="set-budget-btn">
+            Set a budget →
+          </Link>
+        </div>
+      )}
+
+      {/* Quick stats */}
       <div className="stat-row">
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(0,212,160,0.12)', color: '#00d4a0' }}>
-            <TrendingUp size={18} />
+          <div className="stat-icon" style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }}>
+            <span style={{ fontSize: 16 }}>📅</span>
           </div>
-          <div className="stat-value">{formatCurrency(todaySpent)}</div>
+          <div className="stat-value">{formatCompact(todaySpent)}</div>
           <div className="stat-label">Today</div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(245,166,35,0.12)', color: '#f5a623' }}>
-            <Wallet size={18} />
+          <div className="stat-icon" style={{ background: 'var(--gold-dim)', color: 'var(--gold)' }}>
+            <span style={{ fontSize: 16 }}>📊</span>
           </div>
-          <div className="stat-value">{formatCurrency(thisWeek)}</div>
+          <div className="stat-value">{formatCompact(weekSpent)}</div>
           <div className="stat-label">This Week</div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(120,90,230,0.12)', color: '#a78bfa' }}>
-            <ReceiptIndianRupee size={18} />
+          <div className="stat-icon" style={{ background: 'var(--green-dim)', color: 'var(--green)' }}>
+            <span style={{ fontSize: 16 }}>🧾</span>
           </div>
           <div className="stat-value">{expenses.length}</div>
           <div className="stat-label">Entries</div>
         </div>
       </div>
 
-      {/* Category Breakdown */}
+      {/* Category breakdown */}
       {categoryBreakdown.length > 0 && (
-        <section className="section">
+        <section className="section" style={{ marginTop: 8 }}>
           <div className="section-header">
-            <h2 className="section-title">By Category</h2>
+            <div className="section-title">By Category</div>
             {categoryBreakdown.length > 5 && (
               <Link to="/report" className="see-all-link">
-                Full report <ArrowRight size={13} />
+                Full report <ArrowRight size={12} />
               </Link>
             )}
           </div>
-          <div className="category-bars">
+          <div className="cat-bar-list">
             {categoryBreakdown.slice(0, 5).map((item, i) => {
-              const pct = totalSpent > 0 ? (item.total / totalSpent) * 100 : 0;
+              const pctBar = totalSpent > 0 ? (item.total / totalSpent) * 100 : 0;
               return (
                 <div key={i} className="cat-bar-row">
-                  <div className="cat-bar-label">
+                  <div className="cat-bar-left">
                     <span className="cat-bar-icon">{item.category.icon}</span>
                     <span className="cat-bar-name">{item.category.name}</span>
                   </div>
                   <div className="cat-bar-track">
-                    <div className="cat-bar-fill" style={{ width: `${pct}%`, background: item.category.color }} />
+                    <div className="cat-bar-fill" style={{ width: `${pctBar}%`, background: item.category.color }} />
                   </div>
-                  <div className="cat-bar-amount">{formatCurrency(item.total)}</div>
+                  <div className="cat-bar-amount">{formatCompact(item.total)}</div>
                 </div>
               );
             })}
@@ -139,24 +165,24 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* Recent Expenses */}
-      <section className="section">
+      {/* Recent expenses */}
+      <section className="section" style={{ marginTop: 20 }}>
         <div className="section-header">
-          <h2 className="section-title">Recent</h2>
+          <div className="section-title">Recent</div>
           {expenses.length > 5 && (
             <Link to="/expenses" className="see-all-link">
-              View all <ArrowRight size={13} />
+              View all <ArrowRight size={12} />
             </Link>
           )}
         </div>
 
         {recentExpenses.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon" style={{ fontSize: 52 }}>🏗️</div>
+            <div className="empty-icon">🏗️</div>
             <h3>No expenses yet</h3>
-            <p>Tap the + button below to log your first construction cost</p>
-            <Link to="/add" className="btn btn-primary">
-              <PlusCircle size={18} /> Add First Expense
+            <p>Tap the + button to log your first construction cost</p>
+            <Link to="/add" className="btn btn-primary" style={{ marginTop: 8 }}>
+              <PlusCircle size={17} /> Add First Expense
             </Link>
           </div>
         ) : (
@@ -170,7 +196,7 @@ export default function Dashboard() {
                   </div>
                   <div className="expense-details">
                     <div className="expense-cat">{cat?.name || 'Unknown'}</div>
-                    <div className="expense-note">{exp.note || formatDate(exp.date)}</div>
+                    <div className="expense-note">{exp.note || formatDateLabel(exp.date)}</div>
                   </div>
                   <div className="expense-amount">{formatCurrency(exp.amount)}</div>
                 </Link>

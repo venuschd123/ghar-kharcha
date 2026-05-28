@@ -2,41 +2,31 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
-import { formatCurrency, formatDate, groupByDate } from '../utils/formatters';
-import { Search, Filter } from 'lucide-react';
+import { formatCurrency, formatDate, formatDateLabel, groupByDate } from '../utils/formatters';
 
 export default function Expenses() {
   const categories = useLiveQuery(() => db.categories.toArray());
   const projects = useLiveQuery(() => db.projects.toArray());
   const projectId = projects?.[0]?.id;
   const expenses = useLiveQuery(
-    () => projectId != null
-      ? db.expenses.where('projectId').equals(projectId).toArray()
-      : [],
+    () => projectId != null ? db.expenses.where('projectId').equals(projectId).toArray() : [],
     [projectId],
     []
   );
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState(null);
-  const [showFilters, setShowFilters] = useState(false);
 
-  if (!categories || !projects || !expenses) return <div className="page-loading">Loading...</div>;
+  if (!categories || !projects || !expenses) return <div className="page-loading">Loading…</div>;
 
   let filtered = expenses;
-
-  if (filterCat) {
-    filtered = filtered.filter(e => e.categoryId === filterCat);
-  }
-
+  if (filterCat) filtered = filtered.filter(e => e.categoryId === filterCat);
   if (search.trim()) {
     const q = search.toLowerCase();
     filtered = filtered.filter(e => {
       const cat = categories.find(c => c.id === e.categoryId);
-      return (
-        (e.note && e.note.toLowerCase().includes(q)) ||
+      return (e.note && e.note.toLowerCase().includes(q)) ||
         (cat && cat.name.toLowerCase().includes(q)) ||
-        String(e.amount).includes(q)
-      );
+        String(e.amount).includes(q);
     });
   }
 
@@ -46,100 +36,97 @@ export default function Expenses() {
   return (
     <div className="page expenses-page">
       <header className="page-header">
-        <h1 className="page-title">All Expenses</h1>
-        <div className="header-right">
-          <span className="expense-count">{filtered.length} entries</span>
-        </div>
+        <h1 className="page-title">Expenses</h1>
+        <span style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 600 }}>
+          {filtered.length} entries
+        </span>
       </header>
 
-      {/* Search + Filter */}
-      <div className="search-bar">
-        <Search size={16} className="search-icon" />
+      {/* Search */}
+      <div className="expenses-search-wrap">
         <input
           type="text"
-          placeholder="Search by note, category, amount..."
+          className="expenses-search"
+          placeholder="Search by note, category, amount…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="search-input"
         />
-        <button
-          className={`filter-toggle ${filterCat ? 'active' : ''}`}
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          <Filter size={16} />
-        </button>
       </div>
 
-      {/* Category Filters */}
-      {showFilters && (
-        <div className="filter-chips">
+      {/* Category filter chips */}
+      <div style={{ display: 'flex', gap: 6, padding: '0 var(--px) 12px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+        <button
+          style={{
+            padding: '6px 14px', borderRadius: 20, whiteSpace: 'nowrap',
+            fontSize: 12, fontWeight: 700, flexShrink: 0,
+            background: !filterCat ? 'var(--accent-dim)' : 'var(--surface)',
+            color: !filterCat ? 'var(--accent)' : 'var(--text-2)',
+            border: !filterCat ? '1px solid var(--accent-border)' : '1px solid transparent',
+          }}
+          onClick={() => setFilterCat(null)}
+        >
+          All
+        </button>
+        {categories.map(cat => (
           <button
-            className={`filter-chip ${!filterCat ? 'active' : ''}`}
-            onClick={() => setFilterCat(null)}
+            key={cat.id}
+            style={{
+              padding: '6px 12px', borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
+              fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4,
+              background: filterCat === cat.id ? cat.color + '18' : 'var(--surface)',
+              color: filterCat === cat.id ? cat.color : 'var(--text-2)',
+              border: filterCat === cat.id ? `1px solid ${cat.color}44` : '1px solid transparent',
+            }}
+            onClick={() => setFilterCat(filterCat === cat.id ? null : cat.id)}
           >
-            All
+            {cat.icon} {cat.name.split(' ')[0]}
           </button>
-          {categories.map(cat => (
-            <button
-              key={cat.id}
-              className={`filter-chip ${filterCat === cat.id ? 'active' : ''}`}
-              onClick={() => setFilterCat(filterCat === cat.id ? null : cat.id)}
-              style={{
-                borderColor: filterCat === cat.id ? cat.color : 'transparent',
-                background: filterCat === cat.id ? cat.color + '20' : undefined,
-              }}
-            >
-              {cat.icon} {cat.name}
-            </button>
-          ))}
-        </div>
-      )}
+        ))}
+      </div>
 
       {/* Total */}
       {filtered.length > 0 && (
-        <div className="filtered-total">
+        <div className="expenses-total">
           Total: <strong>{formatCurrency(totalFiltered)}</strong>
         </div>
       )}
 
-      {/* Grouped List */}
+      {/* Grouped list */}
       {grouped.length === 0 ? (
         <div className="empty-state">
-          <p>{search || filterCat ? 'No matching expenses found.' : 'No expenses recorded yet.'}</p>
+          <div className="empty-icon">🔍</div>
+          <h3>{search || filterCat ? 'No results' : 'No expenses yet'}</h3>
+          <p>{search || filterCat ? 'Try a different search or filter.' : 'Add your first expense using the + button.'}</p>
         </div>
       ) : (
-        <div className="expense-groups">
-          {grouped.map(([date, exps]) => {
-            const dayTotal = exps.reduce((s, e) => s + e.amount, 0);
-            return (
-              <div key={date} className="expense-group">
-                <div className="group-header">
-                  <span>{formatDate(date)}</span>
-                  <span className="group-total">{formatCurrency(dayTotal)}</span>
-                </div>
-                <div className="expense-list">
-                  {exps
-                    .sort((a, b) => b.id - a.id)
-                    .map(exp => {
-                      const cat = categories.find(c => c.id === exp.categoryId);
-                      return (
-                        <Link to={`/edit/${exp.id}`} key={exp.id} className="expense-item">
-                          <div className="expense-icon" style={{ background: (cat?.color || '#999') + '20' }}>
-                            {cat?.icon || '❓'}
-                          </div>
-                          <div className="expense-details">
-                            <div className="expense-cat">{cat?.name || 'Unknown'}</div>
-                            {exp.note && <div className="expense-note">{exp.note}</div>}
-                          </div>
-                          <div className="expense-amount">{formatCurrency(exp.amount)}</div>
-                        </Link>
-                      );
-                    })}
-                </div>
+        grouped.map(([dateKey, exps]) => {
+          const dayTotal = exps.reduce((s, e) => s + e.amount, 0);
+          return (
+            <div key={dateKey} className="date-group">
+              <div className="date-group-header">
+                <span className="date-group-label">{formatDateLabel(dateKey)}</span>
+                <span className="date-group-total">{formatCurrency(dayTotal)}</span>
               </div>
-            );
-          })}
-        </div>
+              <div className="date-group-list">
+                {[...exps].sort((a, b) => b.id - a.id).map(exp => {
+                  const cat = categories.find(c => c.id === exp.categoryId);
+                  return (
+                    <Link to={`/edit/${exp.id}`} key={exp.id} className="expense-item">
+                      <div className="expense-icon" style={{ background: (cat?.color || '#999') + '22' }}>
+                        {cat?.icon || '❓'}
+                      </div>
+                      <div className="expense-details">
+                        <div className="expense-cat">{cat?.name || 'Unknown'}</div>
+                        <div className="expense-note">{exp.note || formatDate(exp.date)}</div>
+                      </div>
+                      <div className="expense-amount">{formatCurrency(exp.amount)}</div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })
       )}
     </div>
   );

@@ -1,14 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { Home, PlusCircle, List, FileText, Settings } from 'lucide-react';
 
-const navItems = [
-  { to: '/', icon: Home, label: 'Home' },
-  { to: '/expenses', icon: List, label: 'Expenses' },
-  { to: '/add', icon: PlusCircle, label: 'Add', isMain: true },
-  { to: '/report', icon: FileText, label: 'Report' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
-];
-
 export default function Layout() {
   return (
     <div className="app-layout">
@@ -16,27 +8,27 @@ export default function Layout() {
         <Outlet />
       </main>
       <nav className="bottom-nav">
-        {navItems.map(item => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              `nav-item ${isActive ? 'active' : ''} ${item.isMain ? 'nav-main' : ''}`
-            }
-            end={item.to === '/'}
-          >
-            {item.isMain ? (
-              <div className="nav-main-btn">
-                <item.icon size={28} strokeWidth={2.5} />
-              </div>
-            ) : (
-              <>
-                <item.icon size={22} strokeWidth={item.to === '/' ? 2.5 : 2} />
-                <span>{item.label}</span>
-              </>
-            )}
+        <NavLink to="/" end className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+          <Home size={22} />
+          <span>Home</span>
+        </NavLink>
+        <NavLink to="/expenses" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+          <List size={22} />
+          <span>Expenses</span>
+        </NavLink>
+        <div className="nav-fab-wrap">
+          <NavLink to="/add" className={({ isActive }) => `nav-fab${isActive ? ' active-route' : ''}`}>
+            <PlusCircle size={28} strokeWidth={2.5} />
           </NavLink>
-        ))}
+        </div>
+        <NavLink to="/report" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+          <FileText size={22} />
+          <span>Report</span>
+        </NavLink>
+        <NavLink to="/settings" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+          <Settings size={22} />
+          <span>Settings</span>
+        </NavLink>
       </nav>
     </div>
   );
