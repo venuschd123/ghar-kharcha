@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Check bundle size
+        run: |
+          MAIN_JS=$(find dist/assets -name "index-*.js" | head -1)
+          SIZE=$(wc -c < "$MAIN_JS")
+          echo "Main bundle: ${SIZE} bytes"
+          # Warn if over 1.5MB uncompressed
+          if [ "$SIZE" -gt 1572864 ]; then
+            echo "::warning::Main bundle exceeds 1.5 MB uncompressed (${SIZE} bytes)"
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
