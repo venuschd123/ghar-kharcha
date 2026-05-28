@@ -18,13 +18,10 @@ export default function AddExpense() {
   const [date, setDate] = useState(getToday());
   const [note, setNote] = useState('');
   const [photo, setPhoto] = useState(null);
-  // editProjectId only used when editing an existing expense
   const [editProjectId, setEditProjectId] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  // Derive projectId: edit mode uses the expense's project; add mode uses first project
   const projectId = isEdit ? editProjectId : (projects?.[0]?.id ?? null);
-
   const fileRef = useRef();
 
   useEffect(() => {
@@ -45,10 +42,8 @@ export default function AddExpense() {
   const handlePhoto = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (ev) => {
-      // Compress by drawing to canvas
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
@@ -58,10 +53,8 @@ export default function AddExpense() {
           if (w > h) { h = (h * MAX) / w; w = MAX; }
           else { w = (w * MAX) / h; h = MAX; }
         }
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
         setPhoto(canvas.toDataURL('image/jpeg', 0.7));
       };
       img.src = ev.target.result;
@@ -72,23 +65,15 @@ export default function AddExpense() {
   const handleSave = async () => {
     if (!amount || !categoryId || !projectId) return;
     setSaving(true);
-
     const data = {
-      projectId,
-      categoryId,
+      projectId, categoryId,
       amount: parseFloat(amount),
-      date,
-      note: note.trim(),
-      photo,
+      date, note: note.trim(), photo,
       createdAt: new Date().toISOString(),
     };
-
     try {
-      if (isEdit) {
-        await db.expenses.update(Number(id), data);
-      } else {
-        await db.expenses.add(data);
-      }
+      if (isEdit) await db.expenses.update(Number(id), data);
+      else await db.expenses.add(data);
       navigate(-1);
     } catch (err) {
       console.error('Save failed:', err);
@@ -103,7 +88,7 @@ export default function AddExpense() {
     }
   };
 
-  if (!categories || !projects) return <div className="page-loading">Loading...</div>;
+  if (!categories || !projects) return <div className="page-loading">Loading…</div>;
 
   const isValid = amount && parseFloat(amount) > 0 && categoryId && projectId;
 
@@ -114,14 +99,14 @@ export default function AddExpense() {
           <ArrowLeft size={20} />
         </button>
         <h1 className="page-title">{isEdit ? 'Edit Expense' : 'Add Expense'}</h1>
-        {isEdit && (
+        {isEdit ? (
           <button className="delete-btn" onClick={handleDelete}>
             <Trash2 size={18} />
           </button>
-        )}
+        ) : <div style={{ width: 40 }} />}
       </header>
 
-      {/* Amount Input */}
+      {/* Amount */}
       <div className="amount-section">
         <span className="rupee-sign">₹</span>
         <input
@@ -135,24 +120,27 @@ export default function AddExpense() {
         />
       </div>
 
-      {/* Category Picker */}
-      <div className="form-section">
+      {/* Category Tiles */}
+      <div className="form-section" style={{ marginTop: 24 }}>
         <label className="form-label">Category</label>
         <div className="category-grid">
-          {categories.map(cat => (
-            <button
-              key={cat.id}
-              className={`cat-chip ${categoryId === cat.id ? 'selected' : ''}`}
-              style={{
-                borderColor: categoryId === cat.id ? cat.color : 'transparent',
-                background: categoryId === cat.id ? cat.color + '20' : '#1a1a2e',
-              }}
-              onClick={() => setCategoryId(cat.id)}
-            >
-              <span className="cat-chip-icon">{cat.icon}</span>
-              <span className="cat-chip-name">{cat.name}</span>
-            </button>
-          ))}
+          {categories.map(cat => {
+            const selected = categoryId === cat.id;
+            return (
+              <button
+                key={cat.id}
+                className={`cat-tile ${selected ? 'selected' : ''}`}
+                style={{
+                  '--cat-color': cat.color,
+                  '--cat-bg': cat.color + '18',
+                }}
+                onClick={() => setCategoryId(cat.id)}
+              >
+                <span className="cat-tile-icon">{cat.icon}</span>
+                <span className="cat-tile-name">{cat.name}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -182,7 +170,7 @@ export default function AddExpense() {
 
       {/* Photo */}
       <div className="form-section">
-        <label className="form-label">Receipt / Photo (optional)</label>
+        <label className="form-label">Receipt Photo (optional)</label>
         {photo ? (
           <div className="photo-preview">
             <img src={photo} alt="Receipt" />
@@ -193,28 +181,17 @@ export default function AddExpense() {
         ) : (
           <button className="photo-btn" onClick={() => fileRef.current?.click()}>
             <Camera size={20} />
-            <span>Capture or Upload</span>
+            <span>Capture or Upload Receipt</span>
           </button>
         )}
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={handlePhoto}
-          style={{ display: 'none' }}
-        />
+        <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{ display: 'none' }} />
       </div>
 
-      {/* Save Button */}
+      {/* Save */}
       <div className="form-actions">
-        <button
-          className="btn btn-primary btn-full"
-          onClick={handleSave}
-          disabled={!isValid || saving}
-        >
+        <button className="btn btn-primary btn-full" onClick={handleSave} disabled={!isValid || saving}>
           <Check size={18} />
-          {saving ? 'Saving...' : isEdit ? 'Update Expense' : 'Save Expense'}
+          {saving ? 'Saving…' : isEdit ? 'Update Expense' : 'Save Expense'}
         </button>
       </div>
     </div>

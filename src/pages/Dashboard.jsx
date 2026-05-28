@@ -18,13 +18,13 @@ export default function Dashboard() {
   );
 
   if (!activeProject || !categories || !expenses) {
-    return <div className="page-loading">Loading...</div>;
+    return <div className="page-loading">Loading…</div>;
   }
 
   const recentExpenses = [...expenses]
     .sort((a, b) => {
-      const dateCompare = new Date(b.date) - new Date(a.date);
-      return dateCompare !== 0 ? dateCompare : b.id - a.id;
+      const d = new Date(b.date) - new Date(a.date);
+      return d !== 0 ? d : b.id - a.id;
     })
     .slice(0, 5);
 
@@ -34,15 +34,15 @@ export default function Dashboard() {
   const percentUsed = budget > 0 ? Math.min((totalSpent / budget) * 100, 100) : 0;
   const categoryBreakdown = groupByCategory(expenses, categories);
 
-  // This week's spending
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
   const weekStr = weekAgo.toISOString().split('T')[0];
   const thisWeek = expenses.filter(e => e.date >= weekStr).reduce((s, e) => s + e.amount, 0);
 
-  // Today's spending
   const today = new Date().toISOString().split('T')[0];
   const todaySpent = expenses.filter(e => e.date === today).reduce((s, e) => s + e.amount, 0);
+
+  const budgetColor = percentUsed > 90 ? '#ff5f5f' : percentUsed > 70 ? '#f5a623' : '#00d4a0';
 
   return (
     <div className="page dashboard">
@@ -56,30 +56,27 @@ export default function Dashboard() {
         </Link>
       </header>
 
-      {/* Total Card */}
+      {/* Hero Card */}
       <div className="hero-card">
-        <div className="hero-label">Total Spent</div>
+        <div className="hero-badge">Total Spent</div>
         <div className="hero-amount">{formatCurrency(totalSpent)}</div>
-        {budget > 0 && (
+
+        {budget > 0 ? (
           <>
             <div className="budget-bar">
               <div
                 className="budget-fill"
-                style={{
-                  width: `${percentUsed}%`,
-                  background: percentUsed > 90 ? '#e17055' : percentUsed > 70 ? '#fdcb6e' : '#00b894',
-                }}
+                style={{ width: `${percentUsed}%`, background: budgetColor }}
               />
             </div>
             <div className="budget-info">
-              <span>Budget: {formatCurrency(budget)}</span>
-              <span style={{ color: remaining < 0 ? '#e17055' : '#00b894' }}>
-                {remaining < 0 ? 'Over by ' : 'Left: '}{formatCurrency(Math.abs(remaining))}
+              <span>Budget {formatCurrency(budget)}</span>
+              <span style={{ color: remaining < 0 ? '#ff5f5f' : '#00d4a0', fontWeight: 700 }}>
+                {remaining < 0 ? `₹${Math.abs(remaining).toLocaleString('en-IN')} over` : `${formatCurrency(remaining)} left`}
               </span>
             </div>
           </>
-        )}
-        {budget === 0 && (
+        ) : (
           <Link to="/settings" className="set-budget-link">
             Set a budget →
           </Link>
@@ -89,40 +86,41 @@ export default function Dashboard() {
       {/* Quick Stats */}
       <div className="stat-row">
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#00b89420', color: '#00b894' }}>
+          <div className="stat-icon" style={{ background: 'rgba(0,212,160,0.12)', color: '#00d4a0' }}>
             <TrendingUp size={18} />
           </div>
-          <div>
-            <div className="stat-value">{formatCurrency(todaySpent)}</div>
-            <div className="stat-label">Today</div>
-          </div>
+          <div className="stat-value">{formatCurrency(todaySpent)}</div>
+          <div className="stat-label">Today</div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#0984e320', color: '#0984e3' }}>
+          <div className="stat-icon" style={{ background: 'rgba(245,166,35,0.12)', color: '#f5a623' }}>
             <Wallet size={18} />
           </div>
-          <div>
-            <div className="stat-value">{formatCurrency(thisWeek)}</div>
-            <div className="stat-label">This Week</div>
-          </div>
+          <div className="stat-value">{formatCurrency(thisWeek)}</div>
+          <div className="stat-label">This Week</div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#6c5ce720', color: '#6c5ce7' }}>
+          <div className="stat-icon" style={{ background: 'rgba(120,90,230,0.12)', color: '#a78bfa' }}>
             <ReceiptIndianRupee size={18} />
           </div>
-          <div>
-            <div className="stat-value">{expenses.length}</div>
-            <div className="stat-label">Entries</div>
-          </div>
+          <div className="stat-value">{expenses.length}</div>
+          <div className="stat-label">Entries</div>
         </div>
       </div>
 
       {/* Category Breakdown */}
       {categoryBreakdown.length > 0 && (
         <section className="section">
-          <h2 className="section-title">Spending by Category</h2>
+          <div className="section-header">
+            <h2 className="section-title">By Category</h2>
+            {categoryBreakdown.length > 5 && (
+              <Link to="/report" className="see-all-link">
+                Full report <ArrowRight size={13} />
+              </Link>
+            )}
+          </div>
           <div className="category-bars">
-            {categoryBreakdown.slice(0, 6).map((item, i) => {
+            {categoryBreakdown.slice(0, 5).map((item, i) => {
               const pct = totalSpent > 0 ? (item.total / totalSpent) * 100 : 0;
               return (
                 <div key={i} className="cat-bar-row">
@@ -131,20 +129,12 @@ export default function Dashboard() {
                     <span className="cat-bar-name">{item.category.name}</span>
                   </div>
                   <div className="cat-bar-track">
-                    <div
-                      className="cat-bar-fill"
-                      style={{ width: `${pct}%`, background: item.category.color }}
-                    />
+                    <div className="cat-bar-fill" style={{ width: `${pct}%`, background: item.category.color }} />
                   </div>
                   <div className="cat-bar-amount">{formatCurrency(item.total)}</div>
                 </div>
               );
             })}
-            {categoryBreakdown.length > 6 && (
-              <Link to="/report" className="see-all-link">
-                See all categories →
-              </Link>
-            )}
           </div>
         </section>
       )}
@@ -152,16 +142,19 @@ export default function Dashboard() {
       {/* Recent Expenses */}
       <section className="section">
         <div className="section-header">
-          <h2 className="section-title">Recent Expenses</h2>
+          <h2 className="section-title">Recent</h2>
           {expenses.length > 5 && (
             <Link to="/expenses" className="see-all-link">
-              View All <ArrowRight size={14} />
+              View all <ArrowRight size={13} />
             </Link>
           )}
         </div>
+
         {recentExpenses.length === 0 ? (
           <div className="empty-state">
-            <p>No expenses yet.</p>
+            <div className="empty-icon" style={{ fontSize: 52 }}>🏗️</div>
+            <h3>No expenses yet</h3>
+            <p>Tap the + button below to log your first construction cost</p>
             <Link to="/add" className="btn btn-primary">
               <PlusCircle size={18} /> Add First Expense
             </Link>
@@ -172,7 +165,7 @@ export default function Dashboard() {
               const cat = categories.find(c => c.id === exp.categoryId);
               return (
                 <Link to={`/edit/${exp.id}`} key={exp.id} className="expense-item">
-                  <div className="expense-icon" style={{ background: (cat?.color || '#999') + '20' }}>
+                  <div className="expense-icon" style={{ background: (cat?.color || '#999') + '22' }}>
                     {cat?.icon || '❓'}
                   </div>
                   <div className="expense-details">

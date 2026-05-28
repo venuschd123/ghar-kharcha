@@ -27,11 +27,11 @@ export default function Layout() {
           >
             {item.isMain ? (
               <div className="nav-main-btn">
-                <item.icon size={26} strokeWidth={2.5} />
+                <item.icon size={28} strokeWidth={2.5} />
               </div>
             ) : (
               <>
-                <item.icon size={20} />
+                <item.icon size={22} strokeWidth={item.to === '/' ? 2.5 : 2} />
                 <span>{item.label}</span>
               </>
             )}
