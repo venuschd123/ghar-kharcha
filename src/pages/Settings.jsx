@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { Link } from 'react-router-dom';
 import { db } from '../db';
-import { Save, Trash2, Download, Upload, Info } from 'lucide-react';
+import { Save, Trash2, Download, Upload, Info, ListChecks, FileText } from 'lucide-react';
 
 export default function Settings() {
   const projects = useLiveQuery(() => db.projects.toArray());
@@ -10,19 +11,23 @@ export default function Settings() {
 
   const [localName, setLocalName] = useState(null);
   const [localBudget, setLocalBudget] = useState(null);
+  const [localSqft, setLocalSqft] = useState(null);
   const [saved, setSaved] = useState(false);
 
   const name = localName ?? project?.name ?? '';
   const budget = localBudget ?? (project?.budget > 0 ? String(project.budget) : '');
+  const sqft = localSqft ?? (project?.sqft > 0 ? String(project.sqft) : '');
 
   const handleSave = async () => {
     if (!project) return;
     await db.projects.update(project.id, {
       name: name.trim() || 'My Home Construction',
       budget: budget ? parseFloat(budget) : 0,
+      sqft: sqft ? parseFloat(sqft) : 0,
     });
     setLocalName(null);
     setLocalBudget(null);
+    setLocalSqft(null);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -114,10 +119,51 @@ export default function Settings() {
             />
             <div className="form-hint">Set 0 or leave empty for no budget</div>
           </div>
+          <div className="form-section" style={{ marginBottom: 0 }}>
+            <label className="form-label">Total Area (sq. ft.)</label>
+            <input
+              type="number"
+              className="form-input"
+              value={sqft}
+              onChange={e => setLocalSqft(e.target.value)}
+              placeholder="e.g. 1200"
+              inputMode="numeric"
+            />
+            <div className="form-hint">Used to calculate ₹/sqft on your dashboard</div>
+          </div>
           <button className="btn btn-primary btn-full" onClick={handleSave}>
             <Save size={16} />
             {saved ? '✓ Saved!' : 'Save Settings'}
           </button>
+        </div>
+      </div>
+
+      {/* Quick links */}
+      <div className="settings-card">
+        <div className="settings-card-header">
+          <div className="settings-card-title">Tools</div>
+        </div>
+        <div className="settings-card-body" style={{ gap: 0, padding: 0 }}>
+          <Link to="/phases" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
+              <ListChecks size={18} />
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>Construction Phases</div>
+              <div style={{ fontSize: 12, color: 'var(--text-2)' }}>Track progress phase by phase</div>
+            </div>
+            <div style={{ marginLeft: 'auto', color: 'var(--text-3)' }}>›</div>
+          </Link>
+          <Link to="/report" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 20px' }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--green-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--green)' }}>
+              <FileText size={18} />
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>Full Report & PDF Export</div>
+              <div style={{ fontSize: 12, color: 'var(--text-2)' }}>Category breakdown + downloadable PDF</div>
+            </div>
+            <div style={{ marginLeft: 'auto', color: 'var(--text-3)' }}>›</div>
+          </Link>
         </div>
       </div>
 

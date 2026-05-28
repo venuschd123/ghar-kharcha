@@ -1,8 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
-import { formatCurrency, formatCompact, formatDate, formatDateLabel, groupByCategory, getToday, getDaysAgo } from '../utils/formatters';
-import { PlusCircle, ArrowRight, Settings } from 'lucide-react';
+import { formatCurrency, formatCompact, formatDateLabel, groupByCategory, getToday, getDaysAgo } from '../utils/formatters';
+import { PlusCircle, ArrowRight, Settings, AlertCircle } from 'lucide-react';
 
 const RING_R = 46;
 const CIRC = 2 * Math.PI * RING_R;
@@ -32,33 +32,45 @@ export default function Dashboard() {
 
   const expenses = useLiveQuery(
     () => activeProject ? db.expenses.where('projectId').equals(activeProject.id).toArray() : [],
-    [activeProject?.id],
-    []
+    [activeProject?.id], []
+  );
+  const phases = useLiveQuery(
+    () => activeProject ? db.phases.where('projectId').equals(activeProject.id).sortBy('order') : [],
+    [activeProject?.id], []
   );
 
-  if (!activeProject || !categories || !expenses) {
+  if (!activeProject || !categories || !expenses || !phases) {
     return <div className="page-loading">Loading…</div>;
   }
 
-  const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
+  const paidExpenses = expenses.filter(e => !e.isPending);
+  const pendingExpenses = expenses.filter(e => e.isPending);
+  const totalSpent = paidExpenses.reduce((s, e) => s + e.amount, 0);
+  const pendingTotal = pendingExpenses.reduce((s, e) => s + e.amount, 0);
+
   const budget = activeProject.budget || 0;
+  const sqft = activeProject.sqft || 0;
   const remaining = budget - totalSpent;
   const pct = budget > 0 ? (totalSpent / budget) * 100 : 0;
   const ringColor = pct > 90 ? 'var(--danger)' : pct > 70 ? 'var(--gold)' : 'var(--accent)';
 
   const today = getToday();
   const weekAgo = getDaysAgo(7);
-  const todaySpent = expenses.filter(e => e.date === today).reduce((s, e) => s + e.amount, 0);
-  const weekSpent = expenses.filter(e => e.date >= weekAgo).reduce((s, e) => s + e.amount, 0);
+  const todaySpent = paidExpenses.filter(e => e.date === today).reduce((s, e) => s + e.amount, 0);
+  const weekSpent = paidExpenses.filter(e => e.date >= weekAgo).reduce((s, e) => s + e.amount, 0);
 
-  const categoryBreakdown = groupByCategory(expenses, categories);
-  const recentExpenses = [...expenses]
-    .sort((a, b) => b.date !== a.date ? b.date.localeCompare(a.date) : (b.id - a.id))
+  const categoryBreakdown = groupByCategory(paidExpenses, categories);
+  const recentExpenses = [...paidExpenses]
+    .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
     .slice(0, 5);
+
+  const activePhase = phases.find(p => p.status === 'active');
+  const donePhases = phases.filter(p => p.status === 'done').length;
+  const progressPct = phases.length > 0 ? Math.round((donePhases / phases.length) * 100) : 0;
+  const costPerSqft = sqft > 0 ? Math.round(totalSpent / sqft) : null;
 
   return (
     <div className="page dashboard">
-      {/* Header */}
       <div className="dash-header">
         <div>
           <div className="dash-title">Ghar Kharcha</div>
@@ -68,6 +80,15 @@ export default function Dashboard() {
           <Settings size={18} />
         </Link>
       </div>
+
+      {/* Pending dues alert */}
+      {pendingExpenses.length > 0 && (
+        <Link to="/expenses" className="dues-alert">
+          <AlertCircle size={16} />
+          <span><strong>{formatCurrency(pendingTotal)}</strong> pending — {pendingExpenses.length} payment{pendingExpenses.length > 1 ? 's' : ''} due</span>
+          <ArrowRight size={14} style={{ marginLeft: 'auto', flexShrink: 0 }} />
+        </Link>
+      )}
 
       {/* Hero card */}
       {budget > 0 ? (
@@ -90,12 +111,15 @@ export default function Dashboard() {
               <div className="hero-row">
                 <span className="hero-row-label">Remaining</span>
                 <span className="hero-row-val" style={{ color: remaining < 0 ? 'var(--danger)' : 'var(--green)' }}>
-                  {remaining < 0
-                    ? `${formatCompact(Math.abs(remaining))} over`
-                    : formatCompact(remaining)
-                  }
+                  {remaining < 0 ? `${formatCompact(Math.abs(remaining))} over` : formatCompact(remaining)}
                 </span>
               </div>
+              {costPerSqft && (
+                <div className="hero-row">
+                  <span className="hero-row-label">Cost/sqft</span>
+                  <span className="hero-row-val" style={{ color: 'var(--accent)' }}>₹{costPerSqft.toLocaleString('en-IN')}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -103,33 +127,49 @@ export default function Dashboard() {
         <div className="hero-card-simple">
           <div className="hero-eyebrow">Total Spent</div>
           <div className="hero-amount">{formatCurrency(totalSpent)}</div>
-          <Link to="/settings" className="set-budget-btn">
-            Set a budget →
-          </Link>
+          {costPerSqft && (
+            <div style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 700, marginBottom: 12 }}>
+              ₹{costPerSqft.toLocaleString('en-IN')}/sqft so far
+            </div>
+          )}
+          <Link to="/settings" className="set-budget-btn">Set a budget →</Link>
         </div>
+      )}
+
+      {/* Phase progress card */}
+      {phases.length > 0 && (
+        <Link to="/phases" className="phase-progress-card">
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>
+              Construction Progress
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 2 }}>
+              {activePhase ? `🔄 ${activePhase.name}` : donePhases === phases.length ? '✅ All Done!' : '⏳ Not started'}
+            </div>
+            <div style={{ height: 5, background: 'var(--surface)', borderRadius: 3, overflow: 'hidden', marginTop: 8 }}>
+              <div style={{ height: '100%', width: `${progressPct}%`, background: 'var(--accent)', borderRadius: 3 }} />
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 4 }}>{donePhases}/{phases.length} phases complete · {progressPct}%</div>
+          </div>
+          <ArrowRight size={16} color="var(--text-3)" style={{ flexShrink: 0 }} />
+        </Link>
       )}
 
       {/* Quick stats */}
       <div className="stat-row">
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }}>
-            <span style={{ fontSize: 16 }}>📅</span>
-          </div>
+          <div className="stat-icon" style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }}>📅</div>
           <div className="stat-value">{formatCompact(todaySpent)}</div>
           <div className="stat-label">Today</div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--gold-dim)', color: 'var(--gold)' }}>
-            <span style={{ fontSize: 16 }}>📊</span>
-          </div>
+          <div className="stat-icon" style={{ background: 'var(--gold-dim)', color: 'var(--gold)' }}>📊</div>
           <div className="stat-value">{formatCompact(weekSpent)}</div>
           <div className="stat-label">This Week</div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--green-dim)', color: 'var(--green)' }}>
-            <span style={{ fontSize: 16 }}>🧾</span>
-          </div>
-          <div className="stat-value">{expenses.length}</div>
+          <div className="stat-icon" style={{ background: 'var(--green-dim)', color: 'var(--green)' }}>🧾</div>
+          <div className="stat-value">{paidExpenses.length}</div>
           <div className="stat-label">Entries</div>
         </div>
       </div>
@@ -140,9 +180,7 @@ export default function Dashboard() {
           <div className="section-header">
             <div className="section-title">By Category</div>
             {categoryBreakdown.length > 5 && (
-              <Link to="/report" className="see-all-link">
-                Full report <ArrowRight size={12} />
-              </Link>
+              <Link to="/report" className="see-all-link">Full report <ArrowRight size={12} /></Link>
             )}
           </div>
           <div className="cat-bar-list">
@@ -169,13 +207,10 @@ export default function Dashboard() {
       <section className="section" style={{ marginTop: 20 }}>
         <div className="section-header">
           <div className="section-title">Recent</div>
-          {expenses.length > 5 && (
-            <Link to="/expenses" className="see-all-link">
-              View all <ArrowRight size={12} />
-            </Link>
+          {paidExpenses.length > 5 && (
+            <Link to="/expenses" className="see-all-link">View all <ArrowRight size={12} /></Link>
           )}
         </div>
-
         {recentExpenses.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">🏗️</div>

@@ -7,6 +7,8 @@ import AddExpense from './pages/AddExpense';
 import Expenses from './pages/Expenses';
 import Report from './pages/Report';
 import Settings from './pages/Settings';
+import Vendors, { VendorDetail } from './pages/Vendors';
+import Phases from './pages/Phases';
 import ErrorBoundary from './components/ErrorBoundary';
 import Onboarding from './components/Onboarding';
 import { db, initDB } from './db';
@@ -58,6 +60,9 @@ function App() {
             <Route path="/expenses" element={<Expenses />} />
             <Route path="/report" element={<Report />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/vendors" element={<Vendors />} />
+            <Route path="/vendors/:vendorId" element={<VendorDetail />} />
+            <Route path="/phases" element={<Phases />} />
           </Route>
         </Routes>
       </HashRouter>
