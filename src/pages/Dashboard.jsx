@@ -110,14 +110,14 @@ export default function Dashboard() {
               </div>
               <div className="hero-row">
                 <span className="hero-row-label">Remaining</span>
-                <span className="hero-row-val" style={{ color: remaining < 0 ? 'var(--danger)' : 'var(--green)' }}>
+                <span className="hero-row-val" style={{ color: remaining < 0 ? '#fca5a5' : '#6ee7b7' }}>
                   {remaining < 0 ? `${formatCompact(Math.abs(remaining))} over` : formatCompact(remaining)}
                 </span>
               </div>
               {costPerSqft && (
                 <div className="hero-row">
                   <span className="hero-row-label">Cost/sqft</span>
-                  <span className="hero-row-val" style={{ color: 'var(--accent)' }}>₹{costPerSqft.toLocaleString('en-IN')}</span>
+                  <span className="hero-row-val" style={{ color: 'rgba(255,255,255,0.9)' }}>₹{costPerSqft.toLocaleString('en-IN')}</span>
                 </div>
               )}
             </div>
