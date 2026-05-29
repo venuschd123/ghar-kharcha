@@ -1,6 +1,8 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { applyPlugin } from 'jspdf-autotable';
 import { formatCurrency, formatDate } from './formatters';
+
+applyPlugin(jsPDF);
 
 export async function exportToPDF(project, expenses, categories, categoryBreakdown) {
   const doc = new jsPDF();
