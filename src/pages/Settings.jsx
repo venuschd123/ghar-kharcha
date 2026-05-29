@@ -2,11 +2,29 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
-import { Save, Trash2, Download, Upload, Info, ListChecks, FileText } from 'lucide-react';
+import { Save, Trash2, Download, Upload, Info, ListChecks, FileText, Sun, Moon, Monitor } from 'lucide-react';
+
+const THEMES = [
+  { key: 'light', label: 'Light', Icon: Sun },
+  { key: 'dark', label: 'Dark', Icon: Moon },
+  { key: 'system', label: 'Auto', Icon: Monitor },
+];
+
+function applyTheme(theme) {
+  const root = document.documentElement;
+  if (theme === 'system') {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    root.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+  } else {
+    root.setAttribute('data-theme', theme);
+  }
+}
 
 export default function Settings() {
   const projects = useLiveQuery(() => db.projects.toArray());
   const expenseCount = useLiveQuery(() => db.expenses.count(), [], 0);
+  const themeSetting = useLiveQuery(() => db.settings.get('theme'));
+  const currentTheme = themeSetting?.value || 'light';
   const project = projects?.[0];
 
   const [localName, setLocalName] = useState(null);
@@ -135,6 +153,37 @@ export default function Settings() {
             <Save size={16} />
             {saved ? '✓ Saved!' : 'Save Settings'}
           </button>
+        </div>
+      </div>
+
+      {/* Theme */}
+      <div className="settings-card">
+        <div className="settings-card-header">
+          <div className="settings-card-title">Appearance</div>
+        </div>
+        <div className="settings-card-body">
+          <div style={{ display: 'flex', gap: 8 }}>
+            {THEMES.map(({ key, label, Icon }) => (
+              <button
+                key={key}
+                onClick={async () => {
+                  await db.settings.put({ key: 'theme', value: key });
+                  applyTheme(key);
+                }}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 12, border: 'none',
+                  cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                  background: currentTheme === key ? 'var(--accent-dim)' : 'var(--surface)',
+                  color: currentTheme === key ? 'var(--accent)' : 'var(--text-2)',
+                  outline: currentTheme === key ? '2px solid var(--accent-border)' : 'none',
+                }}
+              >
+                <Icon size={18} />
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

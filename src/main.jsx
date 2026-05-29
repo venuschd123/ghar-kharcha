@@ -11,6 +11,7 @@ import Vendors, { VendorDetail } from './pages/Vendors';
 import Phases from './pages/Phases';
 import ErrorBoundary from './components/ErrorBoundary';
 import Onboarding from './components/Onboarding';
+import { ToastProvider } from './components/Toast';
 import { db, initDB } from './db';
 import './index.css';
 
@@ -20,9 +21,19 @@ function App() {
 
   useEffect(() => {
     initDB()
-      .then(() => db.settings.get('onboardingDone'))
-      .then(s => {
-        setOnboarded(s?.value === 'true');
+      .then(async () => {
+        const [onb, themePref] = await Promise.all([
+          db.settings.get('onboardingDone'),
+          db.settings.get('theme'),
+        ]);
+        const theme = themePref?.value || 'light';
+        if (theme === 'system') {
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+        } else {
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+        setOnboarded(onb?.value === 'true');
         setReady(true);
       })
       .catch(err => {
@@ -51,6 +62,7 @@ function App() {
 
   return (
     <ErrorBoundary>
+      <ToastProvider>
       <HashRouter>
         <Routes>
           <Route element={<Layout />}>
@@ -66,6 +78,7 @@ function App() {
           </Route>
         </Routes>
       </HashRouter>
+      </ToastProvider>
     </ErrorBoundary>
   );
 }

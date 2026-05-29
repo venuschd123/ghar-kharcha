@@ -44,6 +44,40 @@
   --px:            20px;
 }
 
+/* ─── TOKENS — DARK THEME ───────────────────────────────── */
+[data-theme="dark"] {
+  --bg:            #0F1117;
+  --bg-card:       #1A1C27;
+  --bg-elevated:   #232536;
+  --surface:       #2A2D3E;
+  --surface-hover: #333650;
+
+  --accent:        #A78BFA;
+  --accent-mid:    #8B5CF6;
+  --accent-dim:    rgba(167, 139, 250, 0.12);
+  --accent-glow:   rgba(167, 139, 250, 0.22);
+  --accent-border: rgba(167, 139, 250, 0.28);
+
+  --green:         #34D399;
+  --green-dim:     rgba(52, 211, 153, 0.12);
+  --gold:          #FBBF24;
+  --gold-dim:      rgba(251, 191, 36, 0.12);
+  --danger:        #F87171;
+  --danger-dim:    rgba(248, 113, 113, 0.12);
+
+  --text:          #F1F5F9;
+  --text-2:        #94A3B8;
+  --text-3:        #64748B;
+  --border:        rgba(255, 255, 255, 0.08);
+  --border-mid:    rgba(255, 255, 255, 0.14);
+
+  --card-shadow:   0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --card-shadow-lg: 0 4px 16px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.2);
+  --nav-bg:        rgba(15, 17, 23, 0.94);
+
+  color-scheme: dark;
+}
+
 /* ─── RESET ──────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { height: 100%; -webkit-tap-highlight-color: transparent; }
@@ -330,7 +364,7 @@ a { text-decoration: none; color: inherit; }
   display: flex; align-items: center; gap: 10px;
   margin: 0 var(--px) 8px;
   padding: 12px 16px;
-  background: #FFFBEB;
+  background: var(--gold-dim);
   border: 1.5px solid rgba(217,119,6,0.3);
   border-radius: var(--radius);
   font-size: 13px; font-weight: 600; color: var(--gold);
@@ -461,7 +495,7 @@ a { text-decoration: none; color: inherit; }
   transition: all 0.15s; white-space: nowrap;
   box-shadow: var(--card-shadow);
 }
-.pending-toggle.active { background: #FFFBEB; color: var(--gold); border-color: rgba(217,119,6,0.3); }
+.pending-toggle.active { background: var(--gold-dim); color: var(--gold); border-color: rgba(217,119,6,0.3); }
 
 /* Date + note options bar */
 .options-bar {
@@ -681,7 +715,7 @@ a { text-decoration: none; color: inherit; }
   border-radius: var(--radius); width: 100%;
   transition: all 0.12s; box-shadow: var(--card-shadow);
 }
-.phase-item.status-done { border-color: rgba(5,150,105,0.2); background: #F0FDF4; }
+.phase-item.status-done { border-color: rgba(5,150,105,0.2); background: var(--green-dim); }
 .phase-item.status-active { border-color: var(--accent-border); background: var(--accent-dim); box-shadow: 0 0 0 2px var(--accent-dim); }
 .phase-item:active { transform: scale(0.99); }
 .phase-status-icon {
@@ -719,6 +753,37 @@ a { text-decoration: none; color: inherit; }
 }
 .vendor-pick-item.active { background: var(--accent-dim); color: var(--accent); }
 .vendor-pick-item:active { opacity: 0.7; }
+
+/* ─── OFFLINE BANNER ─────────────────────────────────────── */
+.offline-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 8000;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 6px 16px;
+  background: var(--gold); color: #fff;
+  font-size: 12px; font-weight: 700;
+}
+
+/* ─── TOAST ──────────────────────────────────────────────── */
+.toast-bar {
+  position: fixed; bottom: calc(var(--nav-h) + 16px); left: 16px; right: 16px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px;
+  background: var(--text); color: var(--bg); border-radius: 14px;
+  font-size: 13px; font-weight: 600;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  z-index: 9000;
+  transform: translateY(120%); opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease;
+}
+.toast-bar.show { transform: translateY(0); opacity: 1; }
+.toast-msg { flex: 1; }
+.toast-undo {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 8px; border: none;
+  background: rgba(255,255,255,0.15); color: inherit;
+  font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
+}
+.toast-undo:active { background: rgba(255,255,255,0.25); }
 
 /* ─── ONBOARDING ─────────────────────────────────────────── */
 .onboarding { position: fixed; inset: 0; z-index: 9999; background: var(--bg); display: flex; flex-direction: column; }

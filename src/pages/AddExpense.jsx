@@ -3,8 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { getToday, getYesterday, formatCurrency, formatDateShort } from '../utils/formatters';
-import { ArrowLeft, Camera, Trash2, Check, Keyboard, ChevronDown, Clock } from 'lucide-react';
+import { ArrowLeft, Camera, Trash2, Check, Keyboard, ChevronDown, Clock, Copy } from 'lucide-react';
 import Numpad from '../components/Numpad';
+import { useToast } from '../components/Toast';
 
 const VENDOR_COLORS = { labour: '#e17055', material: '#0984e3', service: '#6c5ce7' };
 
@@ -12,6 +13,7 @@ export default function AddExpense() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
+  const showToast = useToast();
 
   const categories = useLiveQuery(() => db.categories.toArray());
   const projects = useLiveQuery(() => db.projects.toArray());
@@ -98,10 +100,22 @@ export default function AddExpense() {
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Delete this expense? This cannot be undone.')) {
-      await db.expenses.delete(Number(id));
-      navigate('/expenses');
-    }
+    const exp = await db.expenses.get(Number(id));
+    if (!exp) return;
+    await db.expenses.delete(Number(id));
+    navigate('/expenses');
+    showToast?.('Expense deleted', {
+      undoFn: async () => {
+        const { id: _removed, ...rest } = exp;
+        await db.expenses.add(rest);
+      },
+    });
+  };
+
+  const handleDuplicate = () => {
+    navigate('/add');
+    // Pre-fill states are already set — just keep them and change date
+    setDate(getToday());
   };
 
   if (!categories || !projects) return <div className="page-loading">Loading…</div>;
@@ -131,7 +145,10 @@ export default function AddExpense() {
         <button className="back-btn" onClick={() => navigate(-1)}><ArrowLeft size={20} /></button>
         <span className="page-title">{isEdit ? 'Edit Expense' : 'Add Expense'}</span>
         {isEdit ? (
-          <button className="delete-btn" onClick={handleDelete}><Trash2 size={18} /></button>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button className="delete-btn" onClick={handleDuplicate} title="Duplicate"><Copy size={16} /></button>
+            <button className="delete-btn" onClick={handleDelete} title="Delete"><Trash2 size={16} /></button>
+          </div>
         ) : <div style={{ width: 38 }} />}
       </header>
 

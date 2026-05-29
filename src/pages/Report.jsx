@@ -142,15 +142,15 @@ export default function Report() {
           {pendingTotal > 0 && (
             <div style={{ padding: '0 var(--px) 16px' }}>
               <div style={{
-                background: '#FFFBEB', border: '1px solid rgba(217,119,6,0.2)',
+                background: 'var(--gold-dim)', border: '1px solid rgba(217,119,6,0.2)',
                 borderRadius: 'var(--radius)', padding: '12px 16px',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               }}>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Pending Dues</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#92400E', marginTop: 2 }}>{formatCurrency(pendingTotal)}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--gold)', marginTop: 2 }}>{formatCurrency(pendingTotal)}</div>
                 </div>
-                <div style={{ fontSize: 12, color: '#92400E', fontWeight: 600 }}>{pendingFiltered.length} {pendingFiltered.length === 1 ? 'payment' : 'payments'}</div>
+                <div style={{ fontSize: 12, color: 'var(--gold)', fontWeight: 600 }}>{pendingFiltered.length} {pendingFiltered.length === 1 ? 'payment' : 'payments'}</div>
               </div>
             </div>
           )}

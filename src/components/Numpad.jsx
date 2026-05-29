@@ -23,7 +23,7 @@ export default function Numpad({ value, onChange }) {
             <button
               key={key}
               className={`numpad-key${key === '⌫' ? ' numpad-del' : ''}`}
-              onPointerDown={e => { e.preventDefault(); handle(key); }}
+              onPointerDown={e => { e.preventDefault(); navigator.vibrate?.(8); handle(key); }}
             >
               {key}
             </button>

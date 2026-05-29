@@ -1,9 +1,25 @@
+import { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Home, PlusCircle, Users, ListChecks, Settings } from 'lucide-react';
+import { Home, PlusCircle, Users, ListChecks, Settings, WifiOff } from 'lucide-react';
 
 export default function Layout() {
+  const [offline, setOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const goOff = () => setOffline(true);
+    const goOn = () => setOffline(false);
+    window.addEventListener('offline', goOff);
+    window.addEventListener('online', goOn);
+    return () => { window.removeEventListener('offline', goOff); window.removeEventListener('online', goOn); };
+  }, []);
+
   return (
     <div className="app-layout">
+      {offline && (
+        <div className="offline-banner">
+          <WifiOff size={13} /> Offline — your data is saved locally
+        </div>
+      )}
       <main className="app-main">
         <Outlet />
       </main>
