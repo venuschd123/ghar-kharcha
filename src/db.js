@@ -56,6 +56,32 @@ async function ensurePhases(projectId) {
   }
 }
 
+export async function checkStorageQuota() {
+  try {
+    if (navigator.storage?.estimate) {
+      const { usage, quota } = await navigator.storage.estimate();
+      const pct = quota > 0 ? (usage / quota) * 100 : 0;
+      if (pct > 80) return { warning: true, pct: Math.round(pct), usageMB: Math.round(usage / 1024 / 1024) };
+    }
+  } catch (e) { /* ignore */ }
+  return { warning: false };
+}
+
+async function fixOrphanedExpenses() {
+  try {
+    const cats = await db.categories.toArray();
+    const catIds = new Set(cats.map(c => c.id));
+    const expenses = await db.expenses.toArray();
+    const miscCat = cats.find(c => c.name.includes('Misc'));
+    if (!miscCat) return;
+    for (const exp of expenses) {
+      if (exp.categoryId && !catIds.has(exp.categoryId)) {
+        await db.expenses.update(exp.id, { categoryId: miscCat.id });
+      }
+    }
+  } catch (e) { console.error('Orphan fix failed:', e); }
+}
+
 export async function initDB() {
   const catCount = await db.categories.count();
   if (catCount === 0) {
@@ -77,6 +103,9 @@ export async function initDB() {
       await ensurePhases(p.id);
     }
   }
+
+  // Background integrity checks
+  fixOrphanedExpenses().catch(() => {});
 }
 
 export async function seedDemoData() {

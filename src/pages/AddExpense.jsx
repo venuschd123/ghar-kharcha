@@ -3,9 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { getToday, getYesterday, formatCurrency, formatDateShort } from '../utils/formatters';
-import { ArrowLeft, Camera, Trash2, Check, Keyboard, ChevronDown, Clock, Copy } from 'lucide-react';
+import { ArrowLeft, Camera, Trash2, Check, Keyboard, ChevronDown, Clock, Copy, Mic } from 'lucide-react';
 import Numpad from '../components/Numpad';
 import { useToast } from '../components/Toast';
+import { isVoiceSupported, startVoiceRecognition, parseSpokenAmount, parseSpokenCategory } from '../utils/voiceInput';
 
 const VENDOR_COLORS = { labour: '#e17055', material: '#0984e3', service: '#6c5ce7' };
 
@@ -33,6 +34,7 @@ export default function AddExpense() {
   const [saving, setSaving] = useState(false);
   const [useKeyboard, setUseKeyboard] = useState(false);
   const [showVendorPicker, setShowVendorPicker] = useState(false);
+  const [listening, setListening] = useState(false);
   const fileRef = useRef();
   const kbInputRef = useRef();
 
@@ -132,6 +134,25 @@ export default function AddExpense() {
     ? Number(amount).toLocaleString('en-IN', { maximumFractionDigits: 2 })
     : '0';
 
+  const handleVoice = async () => {
+    if (listening) return;
+    setListening(true);
+    try {
+      const transcript = await startVoiceRecognition('en-IN');
+      const amt = parseSpokenAmount(transcript);
+      if (amt && amt > 0) setAmount(String(amt));
+      const catId = parseSpokenCategory(transcript, categories);
+      if (catId) setCategoryId(catId);
+      // Use remaining text as note if it has words beyond amount/category
+      const words = transcript.split(/\s+/).filter(w => w.length > 2);
+      if (words.length > 1 && !note) setNote(transcript);
+      showToast?.(`Heard: "${transcript}"${amt ? ` → ₹${amt.toLocaleString('en-IN')}` : ''}`);
+    } catch (err) {
+      if (err.message !== 'aborted') showToast?.('Voice input failed — try again');
+    }
+    setListening(false);
+  };
+
   const toggleKeyboard = () => {
     setUseKeyboard(v => {
       if (!v) setTimeout(() => kbInputRef.current?.focus(), 50);
@@ -176,9 +197,16 @@ export default function AddExpense() {
           ) : (
             <div className="amount-chip-empty">Pick a category ↓</div>
           )}
-          <button className={`kb-toggle${useKeyboard ? ' active' : ''}`} onClick={toggleKeyboard} title="Toggle keyboard">
-            <Keyboard size={13} />
-          </button>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {isVoiceSupported && (
+              <button className={`kb-toggle${listening ? ' active' : ''}`} onClick={handleVoice} title="Voice input">
+                <Mic size={13} />
+              </button>
+            )}
+            <button className={`kb-toggle${useKeyboard ? ' active' : ''}`} onClick={toggleKeyboard} title="Toggle keyboard">
+              <Keyboard size={13} />
+            </button>
+          </div>
         </div>
       </div>
 
