@@ -157,7 +157,11 @@ export default function AddExpense() {
       if (words.length > 1 && !note) setNote(transcript);
       showToast?.(`Heard: "${transcript}"${amt ? ` → ₹${amt.toLocaleString('en-IN')}` : ''}`);
     } catch (err) {
-      if (err.message !== 'aborted') showToast?.('Voice input failed — try again');
+      if (err.message === 'no-speech') {
+        showToast?.('No speech detected — tap mic and speak clearly');
+      } else if (err.message !== 'aborted') {
+        showToast?.(err.message || 'Voice not available in this browser');
+      }
     }
     setListening(false);
   };
@@ -182,11 +186,17 @@ export default function AddExpense() {
           <span className={`amount-num${amount ? ' filled' : ''}`}>{displayAmount}</span>
           <input
             ref={kbInputRef}
-            type="number"
+            type="text"
             className="amount-input-hidden"
             value={amount}
-            onChange={e => setAmount(e.target.value)}
+            onChange={e => {
+              const v = e.target.value.replace(/[^0-9.]/g, '');
+              if (v.split('.').length > 2) return;
+              if (v.split('.')[1]?.length > 2) return;
+              setAmount(v);
+            }}
             inputMode="decimal"
+            pattern="[0-9]*"
             autoComplete="off"
           />
         </div>

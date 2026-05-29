@@ -99,13 +99,25 @@ export function startVoiceRecognition(lang = 'en-IN') {
     recognition.maxAlternatives = 1;
     recognition.continuous = false;
 
+    let resolved = false;
     recognition.onresult = (e) => {
+      resolved = true;
       const transcript = e.results[0][0].transcript;
       resolve(transcript);
     };
-    recognition.onerror = (e) => reject(new Error(e.error));
-    recognition.onend = () => {}; // Handled by resolve/reject
-    recognition.start();
+    recognition.onerror = (e) => {
+      if (!resolved) reject(new Error(e.error === 'not-allowed' ? 'Microphone access denied. Please allow microphone in browser settings.' : e.error === 'no-speech' ? 'No speech detected. Please try again.' : e.error));
+    };
+    recognition.onend = () => {
+      if (!resolved) reject(new Error('no-speech'));
+    };
+
+    try {
+      recognition.start();
+    } catch (e) {
+      reject(new Error('Could not start voice recognition. Try using Chrome or Edge.'));
+      return;
+    }
 
     // Auto-stop after 8 seconds
     setTimeout(() => {
