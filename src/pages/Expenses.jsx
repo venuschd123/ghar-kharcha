@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
 import { formatCurrency, formatDate, formatDateLabel, groupByDate } from '../utils/formatters';
+import { Check } from 'lucide-react';
 
 export default function Expenses() {
   const categories = useLiveQuery(() => db.categories.toArray());
@@ -111,16 +112,35 @@ export default function Expenses() {
                 {[...exps].sort((a, b) => b.id - a.id).map(exp => {
                   const cat = categories.find(c => c.id === exp.categoryId);
                   return (
-                    <Link to={`/edit/${exp.id}`} key={exp.id} className="expense-item">
-                      <div className="expense-icon" style={{ background: (cat?.color || '#999') + '22' }}>
-                        {cat?.icon || '❓'}
-                      </div>
-                      <div className="expense-details">
-                        <div className="expense-cat">{cat?.name || 'Unknown'}</div>
-                        <div className="expense-note">{exp.note || formatDate(exp.date)}</div>
-                      </div>
-                      <div className="expense-amount">{formatCurrency(exp.amount)}</div>
-                    </Link>
+                    <div key={exp.id} className={`expense-item-wrap${exp.isPending ? ' pending' : ''}`}>
+                      <Link to={`/edit/${exp.id}`} className="expense-item">
+                        <div className="expense-icon" style={{ background: (cat?.color || '#999') + '22' }}>
+                          {cat?.icon || '❓'}
+                        </div>
+                        <div className="expense-details">
+                          <div className="expense-cat">
+                            {exp.isPending && <span className="pending-dot" />}
+                            {cat?.name || 'Unknown'}
+                          </div>
+                          <div className="expense-note">{exp.note || formatDate(exp.date)}</div>
+                        </div>
+                        <div className="expense-amount" style={exp.isPending ? { color: 'var(--gold)' } : {}}>
+                          {formatCurrency(exp.amount)}
+                        </div>
+                      </Link>
+                      {exp.isPending && (
+                        <button
+                          className="mark-paid-btn"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            await db.expenses.update(exp.id, { isPending: false });
+                          }}
+                          title="Mark as paid"
+                        >
+                          <Check size={13} /> Paid
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>

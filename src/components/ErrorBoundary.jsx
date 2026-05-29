@@ -20,24 +20,30 @@ export default class ErrorBoundary extends Component {
         <div style={{
           padding: '40px 24px',
           textAlign: 'center',
-          color: '#e8e4de',
-          fontFamily: 'sans-serif',
+          color: '#111827',
+          fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif',
+          background: '#F4F5FB',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
-          <h2 style={{ fontSize: 20, marginBottom: 8 }}>Something went wrong</h2>
-          <p style={{ fontSize: 14, color: '#8892b0', marginBottom: 24 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>Something went wrong</h2>
+          <p style={{ fontSize: 14, color: '#6B7280', marginBottom: 24, lineHeight: 1.6 }}>
             Your data is safe. Please refresh the page to try again.
           </p>
           <button
             onClick={() => window.location.reload()}
             style={{
-              background: '#00b894',
+              background: '#7C3AED',
               color: '#fff',
               border: 'none',
-              borderRadius: 8,
-              padding: '12px 24px',
+              borderRadius: 14,
+              padding: '14px 28px',
               fontSize: 14,
-              fontWeight: 600,
+              fontWeight: 700,
               cursor: 'pointer',
             }}
           >

@@ -256,7 +256,7 @@ export default function Vendors() {
                   <div style={{ marginTop: 6, display: 'flex', gap: 12 }}>
                     <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--green)' }}>{formatCurrency(paid)}</span>
                     {pending > 0 && <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>+ {formatCurrency(pending)} due</span>}
-                    <span style={{ fontSize: 12, color: 'var(--text-2)', marginLeft: 'auto' }}>{count} entries</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-2)', marginLeft: 'auto' }}>{count} {count === 1 ? 'entry' : 'entries'}</span>
                   </div>
                 </div>
                 <ChevronRight size={16} color="var(--text-3)" />

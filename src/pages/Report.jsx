@@ -59,9 +59,12 @@ export default function Report() {
     return true;
   });
 
-  const totalSpent = filtered.reduce((s, e) => s + e.amount, 0);
-  const avgEntry = filtered.length > 0 ? totalSpent / filtered.length : 0;
-  const categoryBreakdown = groupByCategory(filtered, categories);
+  const paidFiltered = filtered.filter(e => !e.isPending);
+  const pendingFiltered = filtered.filter(e => e.isPending);
+  const totalSpent = paidFiltered.reduce((s, e) => s + e.amount, 0);
+  const pendingTotal = pendingFiltered.reduce((s, e) => s + e.amount, 0);
+  const avgEntry = paidFiltered.length > 0 ? totalSpent / paidFiltered.length : 0;
+  const categoryBreakdown = groupByCategory(paidFiltered, categories);
   const topCat = categoryBreakdown[0]?.category?.name || '—';
 
   const handleExport = async () => {
@@ -132,6 +135,22 @@ export default function Report() {
                   {project.budget - totalSpent < 0 ? ' over' : ' left'}
                 </div>
                 <div className="report-stat-label">Remaining</div>
+              </div>
+            </div>
+          )}
+
+          {pendingTotal > 0 && (
+            <div style={{ padding: '0 var(--px) 16px' }}>
+              <div style={{
+                background: '#FFFBEB', border: '1px solid rgba(217,119,6,0.2)',
+                borderRadius: 'var(--radius)', padding: '12px 16px',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Pending Dues</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#92400E', marginTop: 2 }}>{formatCurrency(pendingTotal)}</div>
+                </div>
+                <div style={{ fontSize: 12, color: '#92400E', fontWeight: 600 }}>{pendingFiltered.length} {pendingFiltered.length === 1 ? 'payment' : 'payments'}</div>
               </div>
             </div>
           )}
