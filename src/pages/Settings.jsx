@@ -98,10 +98,12 @@ export default function Settings() {
     if (!window.confirm('⚠️ Delete ALL data? This cannot be undone!')) return;
     if (!window.confirm('Really? All expenses and settings will be permanently deleted.')) return;
     await db.expenses.clear();
+    await db.vendors.clear();
+    await db.phases.clear();
     await db.projects.clear();
     await db.categories.clear();
-    const { initDB } = await import('../db');
-    await initDB();
+    await db.settings.delete('isDemo');
+    await db.settings.delete('onboardingDone');
     window.location.reload();
   };
 

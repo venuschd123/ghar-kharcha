@@ -119,13 +119,15 @@ export default function Expenses() {
                         </div>
                         <div className="expense-details">
                           <div className="expense-cat">
-                            {exp.isPending && <span className="pending-dot" />}
                             {cat?.name || 'Unknown'}
+                            {exp.isPending && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: 'var(--gold)', background: 'var(--gold-dim)', padding: '1px 6px', borderRadius: 4 }}>PENDING</span>}
                           </div>
                           <div className="expense-note">{exp.note || formatDate(exp.date)}</div>
                         </div>
-                        <div className="expense-amount" style={exp.isPending ? { color: 'var(--gold)' } : {}}>
-                          {formatCurrency(exp.amount)}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                          <div className="expense-amount" style={exp.isPending ? { color: 'var(--gold)' } : {}}>
+                            {formatCurrency(exp.amount)}
+                          </div>
                         </div>
                       </Link>
                       {exp.isPending && (
