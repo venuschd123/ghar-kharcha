@@ -22,10 +22,15 @@ export default function AddExpense() {
     const pid = projects?.[0]?.id;
     return pid != null ? db.vendors.where('projectId').equals(pid).toArray() : [];
   }, [projects]);
+  const phases = useLiveQuery(() => {
+    const pid = projects?.[0]?.id;
+    return pid != null ? db.phases.where('projectId').equals(pid).sortBy('order') : [];
+  }, [projects]);
 
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState(null);
   const [vendorId, setVendorId] = useState(null);
+  const [phaseId, setPhaseId] = useState(null);
   const [date, setDate] = useState(getToday());
   const [note, setNote] = useState('');
   const [photo, setPhoto] = useState(null);
@@ -34,6 +39,9 @@ export default function AddExpense() {
   const [saving, setSaving] = useState(false);
   const [useKeyboard, setUseKeyboard] = useState(false);
   const [showVendorPicker, setShowVendorPicker] = useState(false);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatIcon, setNewCatIcon] = useState('📌');
   const [listening, setListening] = useState(false);
   const fileRef = useRef();
   const kbInputRef = useRef();
@@ -47,6 +55,7 @@ export default function AddExpense() {
           setAmount(String(exp.amount));
           setCategoryId(exp.categoryId);
           setVendorId(exp.vendorId ?? null);
+          setPhaseId(exp.phaseId ?? null);
           setDate(exp.date);
           setNote(exp.note || '');
           setPhoto(exp.photo || null);
@@ -86,6 +95,7 @@ export default function AddExpense() {
     const data = {
       projectId, categoryId,
       vendorId: vendorId ?? null,
+      phaseId: phaseId ?? null,
       amount: parseFloat(amount),
       date, note: note.trim(), photo,
       isPending,
@@ -223,6 +233,10 @@ export default function AddExpense() {
               <span>{cat.name.split(' ')[0]}</span>
             </button>
           ))}
+          <button className="cat-pill cat-pill-add" onClick={() => setShowAddCategory(true)}>
+            <span className="cat-pill-icon">+</span>
+            <span>Add</span>
+          </button>
         </div>
       </div>
 
@@ -247,6 +261,23 @@ export default function AddExpense() {
           <span>{isPending ? 'Pending' : 'Paid'}</span>
         </button>
       </div>
+
+      {/* Phase selector (optional) */}
+      {phases && phases.length > 0 && (
+        <div style={{ padding: '0 var(--px) 6px' }}>
+          <select
+            className="form-input"
+            value={phaseId || ''}
+            onChange={e => setPhaseId(e.target.value ? Number(e.target.value) : null)}
+            style={{ padding: '9px 14px', fontSize: 13 }}
+          >
+            <option value="">🔨 Link to phase (optional)</option>
+            {phases.map(p => (
+              <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Date + Note + Camera */}
       <div className="options-bar">
@@ -324,6 +355,53 @@ export default function AddExpense() {
                 onClick={() => { setShowVendorPicker(false); navigate('/vendors'); }}
               >
                 + Add New Vendor
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add category bottom sheet */}
+      {showAddCategory && (
+        <div className="bottom-overlay" onClick={() => setShowAddCategory(false)}>
+          <div className="bottom-sheet" onClick={e => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <div className="sheet-title">Add Custom Category</div>
+            <div className="sheet-body">
+              <div className="form-section" style={{ marginBottom: 12 }}>
+                <label className="form-label">Category Name</label>
+                <input className="form-input" placeholder="e.g. Interior Design" value={newCatName}
+                  onChange={e => setNewCatName(e.target.value)} autoFocus maxLength={40} />
+              </div>
+              <div className="form-section" style={{ marginBottom: 12 }}>
+                <label className="form-label">Icon (emoji)</label>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {['📌','🏠','🛠️','🪜','💡','🚰','🪟','🧹','🔌','📋','🏡','🪴'].map(e => (
+                    <button key={e} onClick={() => setNewCatIcon(e)}
+                      style={{
+                        width: 40, height: 40, borderRadius: 10, border: 'none', fontSize: 20,
+                        background: newCatIcon === e ? 'var(--accent-dim)' : 'var(--surface)',
+                        outline: newCatIcon === e ? '2px solid var(--accent-border)' : 'none',
+                        cursor: 'pointer',
+                      }}
+                    >{e}</button>
+                  ))}
+                </div>
+              </div>
+              <button className="btn btn-primary btn-full" disabled={!newCatName.trim()}
+                onClick={async () => {
+                  const id = await db.categories.add({
+                    name: newCatName.trim(), icon: newCatIcon,
+                    color: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0'),
+                    isCustom: true,
+                  });
+                  setCategoryId(id);
+                  setShowAddCategory(false);
+                  setNewCatName('');
+                  setNewCatIcon('📌');
+                }}
+              >
+                Add Category
               </button>
             </div>
           </div>

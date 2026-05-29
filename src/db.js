@@ -16,6 +16,15 @@ db.version(2).stores({
   phases: '++id, projectId, status',
 });
 
+db.version(3).stores({
+  phases: '++id, projectId, status, budget',
+  expenses: '++id, projectId, categoryId, vendorId, phaseId, amount, date, note, photo, isPending, createdAt',
+}).upgrade(tx => {
+  return tx.table('phases').toCollection().modify(phase => {
+    if (phase.budget === undefined) phase.budget = 0;
+  });
+});
+
 export const DEFAULT_CATEGORIES = [
   { name: 'Labour / Mistri', icon: '👷', color: '#e17055' },
   { name: 'Cement & Concrete', icon: '🧱', color: '#636e72' },

@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
 import { formatCurrency, formatCompact, formatDateLabel, groupByCategory, getToday, getDaysAgo } from '../utils/formatters';
-import { PlusCircle, ArrowRight, Settings, AlertCircle } from 'lucide-react';
+import { PlusCircle, ArrowRight, Settings, AlertCircle, X } from 'lucide-react';
 
 const RING_R = 46;
 const CIRC = 2 * Math.PI * RING_R;
@@ -38,10 +38,23 @@ export default function Dashboard() {
     () => activeProject ? db.phases.where('projectId').equals(activeProject.id).sortBy('order') : [],
     [activeProject?.id], []
   );
+  const isDemo = useLiveQuery(() => db.settings.get('isDemo'), [], null);
 
   if (!activeProject || !categories || !expenses || !phases) {
     return <div className="page-loading">Loading…</div>;
   }
+
+  const handleExitDemo = async () => {
+    if (!window.confirm('Exit demo? This will delete all sample data and start a fresh project.')) return;
+    await db.expenses.clear();
+    await db.vendors.clear();
+    await db.phases.clear();
+    await db.projects.clear();
+    await db.categories.clear();
+    await db.settings.delete('isDemo');
+    await db.settings.delete('onboardingDone');
+    window.location.reload();
+  };
 
   const paidExpenses = expenses.filter(e => !e.isPending);
   const pendingExpenses = expenses.filter(e => e.isPending);
@@ -80,6 +93,14 @@ export default function Dashboard() {
           <Settings size={18} />
         </Link>
       </div>
+
+      {/* Demo banner */}
+      {isDemo?.value === 'true' && (
+        <div className="demo-banner">
+          <span>👁️ You're viewing sample data</span>
+          <button onClick={handleExitDemo} className="demo-exit-btn">Start Fresh →</button>
+        </div>
+      )}
 
       {/* Pending dues alert */}
       {pendingExpenses.length > 0 && (
