@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { Home, PlusCircle, Users, ListChecks, Settings, WifiOff } from 'lucide-react';
+import InstallPrompt from './InstallPrompt';
 
 export default function Layout() {
   const [offline, setOffline] = useState(!navigator.onLine);
@@ -46,6 +47,7 @@ export default function Layout() {
           <span>Settings</span>
         </NavLink>
       </nav>
+      <InstallPrompt />
     </div>
   );
 }

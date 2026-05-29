@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
-import { Save, Trash2, Download, Upload, Info, ListChecks, FileText, Sun, Moon, Monitor } from 'lucide-react';
+import { Save, Trash2, Download, Upload, Info, ListChecks, FileText, Sun, Moon, Monitor, Share2 } from 'lucide-react';
 import { CURRENCIES, UNITS, setCurrency, setUnit } from '../utils/formatters';
 
 const THEMES = [
@@ -312,9 +312,19 @@ export default function Settings() {
             <span className="badge">📴 Works Offline</span>
             <span className="badge">🇮🇳 Made in India</span>
           </div>
-          <Link to="/privacy" style={{ marginTop: 12, fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>
-            Privacy Policy →
-          </Link>
+          <div style={{ display: 'flex', gap: 10, marginTop: 12, justifyContent: 'center' }}>
+            <Link to="/privacy" style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>
+              Privacy Policy
+            </Link>
+            {navigator.share && (
+              <button
+                onClick={() => navigator.share({ title: 'Ghar Kharcha', text: 'Track every rupee of your home construction. 100% offline, privacy first.', url: window.location.origin })}
+                style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <Share2 size={13} /> Share App
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
