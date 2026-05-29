@@ -9,10 +9,12 @@ import Report from './pages/Report';
 import Settings from './pages/Settings';
 import Vendors, { VendorDetail } from './pages/Vendors';
 import Phases from './pages/Phases';
+import Privacy from './pages/Privacy';
 import ErrorBoundary from './components/ErrorBoundary';
 import Onboarding from './components/Onboarding';
 import { ToastProvider } from './components/Toast';
 import { db, initDB } from './db';
+import { setCurrency, setUnit } from './utils/formatters';
 import './index.css';
 
 function App() {
@@ -22,10 +24,14 @@ function App() {
   useEffect(() => {
     initDB()
       .then(async () => {
-        const [onb, themePref] = await Promise.all([
+        const [onb, themePref, currPref, unitPref] = await Promise.all([
           db.settings.get('onboardingDone'),
           db.settings.get('theme'),
+          db.settings.get('currency'),
+          db.settings.get('unit'),
         ]);
+        if (currPref?.value) setCurrency(currPref.value);
+        if (unitPref?.value) setUnit(unitPref.value);
         const theme = themePref?.value || 'light';
         if (theme === 'system') {
           const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -75,6 +81,7 @@ function App() {
             <Route path="/vendors" element={<Vendors />} />
             <Route path="/vendors/:vendorId" element={<VendorDetail />} />
             <Route path="/phases" element={<Phases />} />
+            <Route path="/privacy" element={<Privacy />} />
           </Route>
         </Routes>
       </HashRouter>

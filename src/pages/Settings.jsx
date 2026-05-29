@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
 import { Save, Trash2, Download, Upload, Info, ListChecks, FileText, Sun, Moon, Monitor } from 'lucide-react';
+import { CURRENCIES, UNITS, setCurrency, setUnit } from '../utils/formatters';
 
 const THEMES = [
   { key: 'light', label: 'Light', Icon: Sun },
@@ -24,7 +25,11 @@ export default function Settings() {
   const projects = useLiveQuery(() => db.projects.toArray());
   const expenseCount = useLiveQuery(() => db.expenses.count(), [], 0);
   const themeSetting = useLiveQuery(() => db.settings.get('theme'));
+  const currSetting = useLiveQuery(() => db.settings.get('currency'));
+  const unitSetting = useLiveQuery(() => db.settings.get('unit'));
   const currentTheme = themeSetting?.value || 'light';
+  const currentCurrency = currSetting?.value || 'INR';
+  const currentUnit = unitSetting?.value || 'sqft';
   const project = projects?.[0];
 
   const [localName, setLocalName] = useState(null);
@@ -187,6 +192,53 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Regional */}
+      <div className="settings-card">
+        <div className="settings-card-header">
+          <div className="settings-card-title">Regional</div>
+        </div>
+        <div className="settings-card-body">
+          <div className="form-section" style={{ marginBottom: 0 }}>
+            <label className="form-label">Currency</label>
+            <select
+              className="form-input"
+              value={currentCurrency}
+              onChange={async (e) => {
+                await db.settings.put({ key: 'currency', value: e.target.value });
+                setCurrency(e.target.value);
+                window.location.reload();
+              }}
+            >
+              {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+            </select>
+          </div>
+          <div className="form-section" style={{ marginBottom: 0 }}>
+            <label className="form-label">Area Unit</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {UNITS.map(u => (
+                <button
+                  key={u.key}
+                  onClick={async () => {
+                    await db.settings.put({ key: 'unit', value: u.key });
+                    setUnit(u.key);
+                    window.location.reload();
+                  }}
+                  style={{
+                    flex: 1, padding: '10px 0', borderRadius: 12, border: 'none',
+                    cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
+                    background: currentUnit === u.key ? 'var(--accent-dim)' : 'var(--surface)',
+                    color: currentUnit === u.key ? 'var(--accent)' : 'var(--text-2)',
+                    outline: currentUnit === u.key ? '2px solid var(--accent-border)' : 'none',
+                  }}
+                >
+                  {u.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Quick links */}
       <div className="settings-card">
         <div className="settings-card-header">
@@ -260,6 +312,9 @@ export default function Settings() {
             <span className="badge">📴 Works Offline</span>
             <span className="badge">🇮🇳 Made in India</span>
           </div>
+          <Link to="/privacy" style={{ marginTop: 12, fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>
+            Privacy Policy →
+          </Link>
         </div>
       </div>
     </div>
