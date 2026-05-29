@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { getToday, getYesterday, formatCurrency, formatDateShort } from '../utils/formatters';
-import { ArrowLeft, Camera, Trash2, Check, Keyboard, ChevronDown, Clock, Copy, Mic } from 'lucide-react';
+import { ArrowLeft, Camera, Trash2, Check, ChevronDown, Clock, Copy, Mic } from 'lucide-react';
 import Numpad from '../components/Numpad';
 import { useToast } from '../components/Toast';
 import { isVoiceSupported, startVoiceRecognition, parseSpokenAmount, parseSpokenCategory } from '../utils/voiceInput';
@@ -37,7 +37,6 @@ export default function AddExpense() {
   const [isPending, setIsPending] = useState(false);
   const [editProjectId, setEditProjectId] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [useKeyboard, setUseKeyboard] = useState(false);
   const [showVendorPicker, setShowVendorPicker] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCatName, setNewCatName] = useState('');
@@ -163,15 +162,8 @@ export default function AddExpense() {
     setListening(false);
   };
 
-  const toggleKeyboard = () => {
-    setUseKeyboard(v => {
-      if (!v) setTimeout(() => kbInputRef.current?.focus(), 50);
-      return !v;
-    });
-  };
-
   return (
-    <div className={`page add-expense-page${useKeyboard ? ' mode-keyboard' : ''}`}>
+    <div className="page add-expense-page">
       <header className="page-header">
         <button className="back-btn" onClick={() => navigate(-1)}><ArrowLeft size={20} /></button>
         <span className="page-title">{isEdit ? 'Edit Expense' : 'Add Expense'}</span>
@@ -183,23 +175,20 @@ export default function AddExpense() {
         ) : <div style={{ width: 38 }} />}
       </header>
 
-      {/* Amount */}
+      {/* Amount — always accepts keyboard + numpad */}
       <div className="amount-area">
-        <div className="amount-row">
+        <div className="amount-row" onClick={() => kbInputRef.current?.focus()}>
           <span className="amount-rs">₹</span>
-          {useKeyboard ? (
-            <input
-              ref={kbInputRef}
-              type="number"
-              className="amount-input-kb"
-              placeholder="0"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-              inputMode="decimal"
-            />
-          ) : (
-            <span className={`amount-num${amount ? ' filled' : ''}`}>{displayAmount}</span>
-          )}
+          <span className={`amount-num${amount ? ' filled' : ''}`}>{displayAmount}</span>
+          <input
+            ref={kbInputRef}
+            type="number"
+            className="amount-input-hidden"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            inputMode="decimal"
+            autoComplete="off"
+          />
         </div>
         <div className="amount-cat-row">
           {selectedCat ? (
@@ -207,16 +196,11 @@ export default function AddExpense() {
           ) : (
             <div className="amount-chip-empty">Pick a category ↓</div>
           )}
-          <div style={{ display: 'flex', gap: 4 }}>
-            {isVoiceSupported && (
-              <button className={`kb-toggle${listening ? ' active' : ''}`} onClick={handleVoice} title="Voice input">
-                <Mic size={13} />
-              </button>
-            )}
-            <button className={`kb-toggle${useKeyboard ? ' active' : ''}`} onClick={toggleKeyboard} title="Toggle keyboard">
-              <Keyboard size={13} />
+          {isVoiceSupported && (
+            <button className={`kb-toggle${listening ? ' active' : ''}`} onClick={handleVoice} title="Voice input">
+              <Mic size={13} />
             </button>
-          </div>
+          )}
         </div>
       </div>
 
@@ -302,12 +286,24 @@ export default function AddExpense() {
         </button>
       </div>
 
-      {/* Numpad */}
-      {!useKeyboard && (
-        <div className="numpad-wrap">
-          <Numpad value={amount} onChange={setAmount} />
+      {/* Photo preview */}
+      {photo && (
+        <div style={{ padding: '0 var(--px) 8px' }}>
+          <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)' }}>
+            <img src={photo} alt="Receipt" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', display: 'block' }} />
+            <button onClick={() => setPhoto(null)} style={{
+              position: 'absolute', top: 6, right: 6, width: 28, height: 28, borderRadius: '50%',
+              background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
+            }}>✕</button>
+          </div>
         </div>
       )}
+
+      {/* Numpad */}
+      <div className="numpad-wrap">
+        <Numpad value={amount} onChange={setAmount} />
+      </div>
 
       {/* Save */}
       <div className="save-bar">

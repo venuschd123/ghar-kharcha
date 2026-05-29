@@ -17,6 +17,9 @@ export const UNITS = [
   { key: 'sqft', label: 'sq. ft.', factor: 1 },
   { key: 'sqm', label: 'sq. m.', factor: 0.0929 },
   { key: 'sqyd', label: 'sq. yd.', factor: 0.1111 },
+  { key: 'gaj', label: 'gaj', factor: 0.1111 },  // 1 gaj = 9 sqft
+  { key: 'marla', label: 'marla', factor: 0.003673 }, // 1 marla = 272.25 sqft
+  { key: 'kanal', label: 'kanal', factor: 0.000459 }, // 1 kanal = 5445 sqft (20 marla)
 ];
 
 let _currency = CURRENCIES[0]; // default INR
