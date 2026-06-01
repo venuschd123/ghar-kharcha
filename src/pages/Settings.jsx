@@ -103,7 +103,8 @@ function applyTheme(theme) {
 
 export default function Settings() {
   const { activeProject: project, projects } = useProject();
-  const { isPro, status: proStatus } = usePro();
+  const { isPro, trialActive, trialExpired, status: proStatus } = usePro();
+  const trialDateRec = useLiveQuery(() => db.settings.get('pro_trial_activated_at'));
   const expenseCount = useLiveQuery(() => db.expenses.count(), [], 0);
   const themeSetting = useLiveQuery(() => db.settings.get('theme'));
   const currSetting = useLiveQuery(() => db.settings.get('currency'));
@@ -643,16 +644,39 @@ export default function Settings() {
       <div className="mx-px" style={{ marginBottom: 10 }}>
         <div className="pro-hero-card">
           {isPro ? (
-            <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ position: 'relative', zIndex: 1, width: '100%' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>
                 Ghar Kharcha Pro
               </div>
-              <div className="pro-active-badge" style={{ marginBottom: 14 }}>
-                <Zap size={14} /> Pro Active
+              <div className="pro-active-badge" style={{ marginBottom: 10 }}>
+                <Zap size={14} /> {proStatus === 'trial' ? 'Trial Active' : 'Pro Active'}
               </div>
+              {trialActive && trialDateRec?.value && (() => {
+                const daysLeft = Math.max(0, 30 - Math.floor((Date.now() - new Date(trialDateRec.value).getTime()) / 86400000));
+                return (
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,.5)', marginBottom: 10 }}>
+                    {daysLeft} day{daysLeft !== 1 ? 's' : ''} remaining in trial
+                  </div>
+                );
+              })()}
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,.55)', lineHeight: 1.5 }}>
-                All Pro features are unlocked: unlimited projects, Excel export, OCR scanning, and priority support.
+                All Pro features unlocked: unlimited projects, Excel export, OCR scanning, and priority support.
               </div>
+            </div>
+          ) : trialExpired ? (
+            <div style={{ position: 'relative', zIndex: 1, width: '100%' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 6 }}>
+                Ghar Kharcha Pro
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#F87171', marginBottom: 10 }}>Trial Expired</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,.55)', lineHeight: 1.5, marginBottom: 14 }}>
+                Your 30-day trial has ended. Upgrade to Pro to continue using Excel export, OCR, and unlimited projects.
+              </div>
+              <button
+                onClick={() => setShowUpgrade(true)}
+                style={{ width: '100%', height: 48, borderRadius: 12, border: 'none', cursor: 'pointer', background: 'var(--accent)', color: '#fff', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(16,185,129,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <Zap size={15} /> Upgrade to Pro — ₹299/year
+              </button>
             </div>
           ) : (
             <div style={{ position: 'relative', zIndex: 1, width: '100%' }}>
