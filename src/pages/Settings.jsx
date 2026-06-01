@@ -234,45 +234,73 @@ export default function Settings() {
     URL.revokeObjectURL(url);
   };
 
+  const doImportRaw = async (raw) => {
+    // Allowlist-strip + PRESERVE original IDs so all foreign key references stay valid.
+    // Tables are fully cleared before import, so there is no collision risk.
+    const safeId = id => (id != null ? Number(id) : undefined);
+    const stripProject  = ({ id, name, budget, sqft, createdAt }) =>
+      ({ id: safeId(id), name: String(name ?? 'Project'), budget: Number(budget ?? 0), sqft: Number(sqft ?? 0), createdAt: createdAt ?? new Date().toISOString() });
+    const stripCategory = ({ id, name, icon, color, isCustom }) =>
+      ({ id: safeId(id), name: String(name ?? ''), icon: String(icon ?? ''), color: String(color ?? '#999'), isCustom: !!isCustom });
+    const stripExpense  = ({ id, projectId, categoryId, vendorId, phaseId, amount, date, note, photo, isPending, createdAt }) =>
+      ({ id: safeId(id), projectId, categoryId, vendorId: vendorId ?? null, phaseId: phaseId ?? null, amount, date, note: note ?? '', photo: photo ?? null, isPending: !!isPending, createdAt: createdAt ?? new Date().toISOString() });
+    const stripVendor   = ({ id, projectId, name, type, phone, createdAt }) =>
+      ({ id: safeId(id), projectId, name: String(name ?? ''), type: String(type ?? ''), phone: String(phone ?? ''), createdAt: createdAt ?? new Date().toISOString() });
+    const stripPhase    = ({ id, projectId, name, emoji, order, status, budget }) =>
+      ({ id: safeId(id), projectId, name: String(name ?? ''), emoji: String(emoji ?? ''), order: Number(order ?? 0), status: String(status ?? 'pending'), budget: Number(budget ?? 0) });
+    const stripCatBudget = ({ id, projectId, categoryId, budget }) =>
+      ({ id: safeId(id), projectId, categoryId, budget: Number(budget ?? 0) });
+
+    await db.expenses.clear();
+    await db.vendors.clear();
+    await db.phases.clear();
+    await db.projects.clear();
+    await db.categories.clear();
+    await db.categoryBudgets.clear();
+
+    await db.projects.bulkAdd(raw.projects.map(stripProject));
+    await db.categories.bulkAdd(raw.categories.map(stripCategory));
+    await db.expenses.bulkAdd(raw.expenses.map(stripExpense));
+    if (Array.isArray(raw.vendors))         await db.vendors.bulkAdd(raw.vendors.map(stripVendor));
+    if (Array.isArray(raw.phases))          await db.phases.bulkAdd(raw.phases.map(stripPhase));
+    if (Array.isArray(raw.categoryBudgets)) await db.categoryBudgets.bulkAdd(raw.categoryBudgets.map(stripCatBudget));
+
+    window.location.reload();
+  };
+
   const doImport = async (file) => {
     try {
+      // Size guard: reject files > 5MB
+      if (file.size > 5 * 1024 * 1024) {
+        setConfirm({ title: 'File Too Large', message: 'Backup files must be under 5MB. This file is too large to be a valid Ghar Kharcha backup.', danger: false, confirmLabel: 'OK', onConfirm: () => setConfirm(null) });
+        return;
+      }
+
       const raw = JSON.parse(await file.text());
+
+      // Guard against prototype pollution
+      if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+        throw new Error('Invalid backup structure');
+      }
+
       if (!raw.version || !Array.isArray(raw.expenses) || !Array.isArray(raw.categories)) {
         setConfirm({ title: 'Invalid Backup File', message: 'The selected file is missing required fields. Please choose a valid Ghar Kharcha backup.', danger: false, confirmLabel: 'OK', onConfirm: () => setConfirm(null) });
         return;
       }
 
-      // Allowlist-strip + PRESERVE original IDs so all foreign key references stay valid.
-      // Tables are fully cleared before import, so there is no collision risk.
-      const safeId = id => (id != null ? Number(id) : undefined);
-      const stripProject  = ({ id, name, budget, sqft, createdAt }) =>
-        ({ id: safeId(id), name: String(name ?? 'Project'), budget: Number(budget ?? 0), sqft: Number(sqft ?? 0), createdAt: createdAt ?? new Date().toISOString() });
-      const stripCategory = ({ id, name, icon, color, isCustom }) =>
-        ({ id: safeId(id), name: String(name ?? ''), icon: String(icon ?? ''), color: String(color ?? '#999'), isCustom: !!isCustom });
-      const stripExpense  = ({ id, projectId, categoryId, vendorId, phaseId, amount, date, note, photo, isPending, createdAt }) =>
-        ({ id: safeId(id), projectId, categoryId, vendorId: vendorId ?? null, phaseId: phaseId ?? null, amount, date, note: note ?? '', photo: photo ?? null, isPending: !!isPending, createdAt: createdAt ?? new Date().toISOString() });
-      const stripVendor   = ({ id, projectId, name, type, phone, createdAt }) =>
-        ({ id: safeId(id), projectId, name: String(name ?? ''), type: String(type ?? ''), phone: String(phone ?? ''), createdAt: createdAt ?? new Date().toISOString() });
-      const stripPhase    = ({ id, projectId, name, emoji, order, status, budget }) =>
-        ({ id: safeId(id), projectId, name: String(name ?? ''), emoji: String(emoji ?? ''), order: Number(order ?? 0), status: String(status ?? 'pending'), budget: Number(budget ?? 0) });
-      const stripCatBudget = ({ id, projectId, categoryId, budget }) =>
-        ({ id: safeId(id), projectId, categoryId, budget: Number(budget ?? 0) });
+      // Sanity check: warn if unusually large
+      if (raw.expenses.length > 50000) {
+        setConfirm({
+          title: 'Unusually Large Backup',
+          message: `This backup contains ${raw.expenses.length.toLocaleString()} expenses, which is unusually high. Only import files exported from Ghar Kharcha.`,
+          danger: true,
+          confirmLabel: 'Import Anyway',
+          onConfirm: () => { setConfirm(null); doImportRaw(raw); },
+        });
+        return;
+      }
 
-      await db.expenses.clear();
-      await db.vendors.clear();
-      await db.phases.clear();
-      await db.projects.clear();
-      await db.categories.clear();
-      await db.categoryBudgets.clear();
-
-      await db.projects.bulkAdd(raw.projects.map(stripProject));
-      await db.categories.bulkAdd(raw.categories.map(stripCategory));
-      await db.expenses.bulkAdd(raw.expenses.map(stripExpense));
-      if (Array.isArray(raw.vendors))         await db.vendors.bulkAdd(raw.vendors.map(stripVendor));
-      if (Array.isArray(raw.phases))          await db.phases.bulkAdd(raw.phases.map(stripPhase));
-      if (Array.isArray(raw.categoryBudgets)) await db.categoryBudgets.bulkAdd(raw.categoryBudgets.map(stripCatBudget));
-
-      window.location.reload();
+      await doImportRaw(raw);
     } catch (err) {
       setConfirm({ title: 'Import Failed', message: err.message, danger: false, confirmLabel: 'OK', onConfirm: () => setConfirm(null) });
     }
