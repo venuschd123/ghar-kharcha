@@ -111,12 +111,16 @@ export default function Settings() {
   };
 
   const handleExport = async () => {
+    // Export ALL tables — vendors, phases, and categoryBudgets included
     const data = {
-      version: 1,
+      version: 2,
       exportedAt: new Date().toISOString(),
-      projects: await db.projects.toArray(),
-      categories: await db.categories.toArray(),
-      expenses: await db.expenses.toArray(),
+      projects:        await db.projects.toArray(),
+      categories:      await db.categories.toArray(),
+      expenses:        await db.expenses.toArray(),
+      vendors:         await db.vendors.toArray(),
+      phases:          await db.phases.toArray(),
+      categoryBudgets: await db.categoryBudgets.toArray(),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -131,18 +135,41 @@ export default function Settings() {
     const file = e.target.files[0];
     if (!file) return;
     try {
-      const data = JSON.parse(await file.text());
-      if (!data.version || !data.expenses || !data.categories) {
-        alert('Invalid backup file.');
+      const raw = JSON.parse(await file.text());
+      if (!raw.version || !Array.isArray(raw.expenses) || !Array.isArray(raw.categories)) {
+        alert('Invalid backup file — missing required fields.');
         return;
       }
-      if (!window.confirm(`Replace all data with backup (${data.expenses.length} expenses)?`)) return;
+      if (!window.confirm(`Restore backup? This replaces all current data (${raw.expenses.length} expenses).`)) return;
+
+      // Allowlist-strip each record to guard against prototype pollution
+      const stripExpense  = ({ projectId, categoryId, vendorId, phaseId, amount, date, note, photo, isPending, createdAt }) =>
+        ({ projectId, categoryId, vendorId, phaseId, amount, date, note: note ?? '', photo: photo ?? null, isPending: !!isPending, createdAt: createdAt ?? new Date().toISOString() });
+      const stripProject  = ({ name, budget, sqft, createdAt }) =>
+        ({ name: String(name ?? 'Project'), budget: Number(budget ?? 0), sqft: Number(sqft ?? 0), createdAt: createdAt ?? new Date().toISOString() });
+      const stripCategory = ({ name, icon, color, isCustom }) =>
+        ({ name: String(name ?? ''), icon: String(icon ?? ''), color: String(color ?? '#999'), isCustom: !!isCustom });
+      const stripVendor   = ({ projectId, name, type, phone, createdAt }) =>
+        ({ projectId, name: String(name ?? ''), type: String(type ?? ''), phone: String(phone ?? ''), createdAt: createdAt ?? new Date().toISOString() });
+      const stripPhase    = ({ projectId, name, emoji, order, status, budget }) =>
+        ({ projectId, name: String(name ?? ''), emoji: String(emoji ?? ''), order: Number(order ?? 0), status: String(status ?? 'pending'), budget: Number(budget ?? 0) });
+      const stripCatBudget = ({ projectId, categoryId, budget }) =>
+        ({ projectId, categoryId, budget: Number(budget ?? 0) });
+
       await db.expenses.clear();
-      await db.categories.clear();
+      await db.vendors.clear();
+      await db.phases.clear();
       await db.projects.clear();
-      await db.projects.bulkAdd(data.projects);
-      await db.categories.bulkAdd(data.categories);
-      await db.expenses.bulkAdd(data.expenses);
+      await db.categories.clear();
+      await db.categoryBudgets.clear();
+
+      await db.projects.bulkAdd(raw.projects.map(stripProject));
+      await db.categories.bulkAdd(raw.categories.map(stripCategory));
+      await db.expenses.bulkAdd(raw.expenses.map(stripExpense));
+      if (Array.isArray(raw.vendors))         await db.vendors.bulkAdd(raw.vendors.map(stripVendor));
+      if (Array.isArray(raw.phases))          await db.phases.bulkAdd(raw.phases.map(stripPhase));
+      if (Array.isArray(raw.categoryBudgets)) await db.categoryBudgets.bulkAdd(raw.categoryBudgets.map(stripCatBudget));
+
       window.location.reload();
     } catch (err) {
       alert('Import failed: ' + err.message);

@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "command": "FILE=\"$FILE_PATH\"; EXT=\"${FILE##*.}\"; if [[ \"$EXT\" == \"jsx\" || \"$EXT\" == \"js\" || \"$EXT\" == \"ts\" || \"$EXT\" == \"tsx\" || \"$EXT\" == \"css\" ]]; then cd /Users/venusgupta/Downloads/ghar-kharcha/ghar-kharcha && npx prettier --write \"$FILE_PATH\" 2>/dev/null; fi",
+        "description": "Auto-format JS/JSX/CSS files on save"
+      }
+    ],
+    "Stop": [
+      {
+        "command": "cd /Users/venusgupta/Downloads/ghar-kharcha/ghar-kharcha && node -e \"\nconst fs = require('fs');\nconst {execSync} = require('child_process');\ntry {\n  const status = execSync('git status --short 2>/dev/null').toString().trim();\n  const log = execSync('git log --oneline -3 2>/dev/null').toString().trim();\n  const date = new Date().toISOString().split('T')[0];\n  const note = [\n    '',\n    '## Session Checkpoint — ' + date,\n    'Last 3 commits:',\n    log || '(none)',\n    '',\n    'Uncommitted changes at session end:',\n    status || '(clean)',\n  ].join('\\n');\n  const current = fs.readFileSync('CLAUDE.md', 'utf8');\n  if (!current.includes('Session Checkpoint — ' + date)) {\n    fs.writeFileSync('CLAUDE.md', current + note + '\\n');\n  }\n} catch(e) {}\n\" 2>/dev/null",
+        "description": "Append git state checkpoint to CLAUDE.md at session end"
+      }
+    ]
+  }
+}

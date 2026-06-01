@@ -406,7 +406,7 @@ img { display:block; max-width:100%; }
 .cat-bar-icon { font-size:16px; width:26px; text-align:center; flex-shrink:0; }
 .cat-bar-name { font-size:12px; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .cat-bar-track { flex:1; height:7px; background:var(--surface); border-radius:var(--r-pill); overflow:hidden; }
-.cat-bar-fill { height:100%; border-radius:var(--r-pill); transition:width 1s var(--ease-out); }
+.cat-bar-fill { height:100%; border-radius:var(--r-pill); }
 .cat-bar-amount { font-size:12px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; width:58px; text-align:right; flex-shrink:0; }
 
 /* Insight chips */
@@ -1209,3 +1209,120 @@ img { display:block; max-width:100%; }
   font-family:inherit; color:var(--text-2);
 }
 .pending-toggle.active { color:var(--gold); }
+
+/* ═══════════════════════════════════════════════════════
+   DESIGN AUDIT FIXES — all agent-verified
+   ═══════════════════════════════════════════════════════ */
+
+/* Fix 1 — Hero card label contrast (was rgba .38 = 2.1:1 fail) */
+.hero-eyebrow    { color: rgba(255,255,255,.58) !important; }
+.hero-row-label  { color: rgba(255,255,255,.58) !important; }
+
+/* Hero row visual separator between stats */
+.hero-row + .hero-row {
+  border-top: 1px solid rgba(255,255,255,.07);
+  padding-top: 5px; margin-top: 1px;
+}
+
+/* Fix 3 — Category cards: CSS custom prop tinting */
+.cat-card {
+  --cat-color: var(--accent);
+  background: color-mix(in srgb, var(--cat-color) 7%, var(--surface));
+}
+.cat-card:hover {
+  background: color-mix(in srgb, var(--cat-color) 14%, var(--surface));
+}
+.cat-card.active {
+  background: color-mix(in srgb, var(--cat-color) 16%, transparent);
+  border-color: var(--cat-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cat-color) 12%, transparent);
+}
+.cat-card-icon-wrap {
+  background: color-mix(in srgb, var(--cat-color) 18%, var(--bg-card)) !important;
+}
+.cat-card.active .cat-card-icon-wrap {
+  background: var(--cat-color) !important;
+}
+
+/* Fix 4 — Section headers: real size + breathing room */
+.section-title {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  color: var(--text) !important;
+  text-transform: none !important;
+  letter-spacing: -.2px !important;
+}
+.section { padding-top: 18px; }
+.section-header { margin-bottom: 14px !important; }
+
+/* Fix 5 — Expense note contrast (was text-3 = 2.5:1 fail) */
+.expense-note { color: var(--text-2) !important; }
+
+/* Fix 7 — Loading skeleton shimmer */
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position:  200% 0; }
+}
+.skeleton {
+  border-radius: var(--r);
+  background: linear-gradient(
+    90deg,
+    var(--surface)   25%,
+    var(--surface-2) 50%,
+    var(--surface)   75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+.skeleton-hero   { height: 128px; margin: 0 var(--px) 14px; border-radius: var(--r-2xl); }
+.skeleton-stat   { height: 82px; flex: 1; border-radius: var(--r-xl); }
+.skeleton-row    { height: 58px; margin: 0 var(--px) 3px; }
+.skeleton-narrow { height: 58px; margin: 0 var(--px) 3px; width: 60%; }
+
+/* Fix 9 — Date-group headers: sticky + heavier weight */
+.date-group-header {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 10px var(--px) 5px !important;
+}
+.date-group-label {
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: var(--text) !important;
+  text-transform: none !important;
+  letter-spacing: -.2px !important;
+}
+
+/* Fix 10 — Stat icon tinted backgrounds */
+.stat-icon { background: var(--surface); }
+
+/* Rupee symbol color shift when category selected (js sets inline style) */
+.amount-rs-colored { transition: color var(--dur-fast); }
+
+/* ═══════════════════════════════════════════════════════
+   SETTINGS — data-info row
+   ═══════════════════════════════════════════════════════ */
+.data-info {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text-2); font-weight: 500;
+  padding: 10px 14px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--r);
+}
+.data-info svg { color: var(--text-3); flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════════════════
+   SELECT — cross-browser + dark mode
+   ═══════════════════════════════════════════════════════ */
+select.form-input {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+[data-theme="dark"] select.form-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  color-scheme: dark;
+}

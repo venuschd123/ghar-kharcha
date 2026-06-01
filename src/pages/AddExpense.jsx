@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { getToday, getYesterday, formatCurrency, formatDateShort } from '../utils/formatters';
@@ -14,9 +14,13 @@ const VENDOR_COLORS = { labour: '#e17055', material: '#0984e3', service: '#6c5ce
 
 export default function AddExpense() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const isEdit = Boolean(id);
   const showToast = useToast();
+
+  // Prefill from duplicate action (state passed via navigate)
+  const prefill = location.state?.prefill ?? {};
 
   const { activeProject } = useProject();
   const categories = useLiveQuery(() => db.categories.toArray());
@@ -29,12 +33,12 @@ export default function AddExpense() {
     return pid != null ? db.phases.where('projectId').equals(pid).sortBy('order') : [];
   }, [activeProject?.id]);
 
-  const [amount, setAmount] = useState('');
-  const [categoryId, setCategoryId] = useState(null);
-  const [vendorId, setVendorId] = useState(null);
-  const [phaseId, setPhaseId] = useState(null);
-  const [date, setDate] = useState(getToday());
-  const [note, setNote] = useState('');
+  const [amount, setAmount] = useState(prefill.amount ?? '');
+  const [categoryId, setCategoryId] = useState(prefill.categoryId ?? null);
+  const [vendorId, setVendorId] = useState(prefill.vendorId ?? null);
+  const [phaseId, setPhaseId] = useState(prefill.phaseId ?? null);
+  const [date, setDate] = useState(getToday()); // always today for a duplicate
+  const [note, setNote] = useState(prefill.note ?? '');
   const [photo, setPhoto] = useState(null);
   const [isPending, setIsPending] = useState(false);
   const [editProjectId, setEditProjectId] = useState(null);
@@ -170,9 +174,13 @@ export default function AddExpense() {
   };
 
   const handleDuplicate = () => {
-    navigate('/add');
-    // Pre-fill states are already set — just keep them and change date
-    setDate(getToday());
+    // Pass current field values via location state — component remounts on navigate('/add')
+    // so local state would be wiped without this
+    navigate('/add', {
+      state: {
+        prefill: { amount, categoryId, vendorId, phaseId, note, isPending },
+      },
+    });
   };
 
   if (!categories || !activeProject) return <div className="page-loading">Loading…</div>;

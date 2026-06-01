@@ -7,6 +7,22 @@ export default defineConfig({
     port: process.env.PORT ? parseInt(process.env.PORT) : 5174,
     strictPort: false,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Rolldown (Vite 8) requires manualChunks as a function, not an object
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (id.includes('/recharts/') || id.includes('/d3-') || id.includes('/victory-')) return 'vendor-recharts';
+          if (id.includes('/motion/') || id.includes('/framer-motion/')) return 'vendor-motion';
+          if (id.includes('/jspdf')) return 'vendor-pdf';
+          if (id.includes('/dexie')) return 'vendor-dexie';
+          if (id.includes('/react-dom/') || id.includes('/react-router') || id.includes('/react/index')) return 'vendor-react';
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600, // recharts chunk will be ~500kb, that's acceptable
+  },
   plugins: [
     react(),
     VitePWA({
@@ -16,23 +32,14 @@ export default defineConfig({
         name: 'Ghar Kharcha - Construction Cost Tracker',
         short_name: 'Ghar Kharcha',
         description: 'Track every rupee of your home construction. 100% offline.',
-        theme_color: '#7C3AED',
-        background_color: '#F4F5FB',
+        theme_color: '#10B981',
+        background_color: '#F8FAFC',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
         icons: [
-          {
-            src: 'icon-192.png',
-            sizes: '192x192',
-            type: 'image/png',
-          },
-          {
-            src: 'icon-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable',
-          },
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
         ],
       },
       workbox: {

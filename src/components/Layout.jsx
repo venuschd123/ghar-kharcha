@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Plus, BarChart2, PieChart, Settings, WifiOff } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import ErrorBoundary from './ErrorBoundary';
 import InstallPrompt from './InstallPrompt';
 
 const pageVariants = {
-  initial:  { opacity: 0, y: 8 },
-  animate:  { opacity: 1, y: 0, transition: { duration: 0.22, ease: [0.16, 1, 0.3, 1] } },
-  exit:     { opacity: 0, y: -4, transition: { duration: 0.14, ease: 'easeIn' } },
+  initial: { opacity: 0, y: 6 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] } },
+  exit:    { opacity: 0, y: -4, transition: { duration: 0.12, ease: 'easeIn' } },
 };
 
 function AnimatedOutlet() {
@@ -20,9 +21,11 @@ function AnimatedOutlet() {
         initial="initial"
         animate="animate"
         exit="exit"
-        style={{ willChange: 'opacity, transform' }}
       >
-        <Outlet />
+        {/* Scoped ErrorBoundary per route — DB failure on one page doesn't kill the app */}
+        <ErrorBoundary key={location.pathname}>
+          <Outlet />
+        </ErrorBoundary>
       </motion.div>
     </AnimatePresence>
   );
@@ -36,14 +39,17 @@ export default function Layout() {
     const off = () => setOffline(true);
     window.addEventListener('online', on);
     window.addEventListener('offline', off);
-    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+    return () => {
+      window.removeEventListener('online', on);
+      window.removeEventListener('offline', off);
+    };
   }, []);
 
   return (
     <div className="app-layout">
       {offline && (
         <div className="offline-banner">
-          <WifiOff size={13} /> Offline - your data is saved locally
+          <WifiOff size={13} /> Offline — your data is saved locally
         </div>
       )}
       <main className="app-main">

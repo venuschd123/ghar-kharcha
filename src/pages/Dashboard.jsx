@@ -60,7 +60,27 @@ export default function Dashboard() {
   const isDemo = useLiveQuery(() => db.settings.get('isDemo'), [], null);
 
   if (!activeProject || !categories || !expenses || !phases) {
-    return <div className="page-loading">Loading...</div>;
+    return (
+      <div className="page dashboard">
+        <div className="dash-header">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="skeleton" style={{ height: 22, width: 140, borderRadius: 6 }} />
+            <div className="skeleton" style={{ height: 28, width: 180, borderRadius: 20 }} />
+          </div>
+          <div className="skeleton" style={{ width: 40, height: 40, borderRadius: 10 }} />
+        </div>
+        <div className="skeleton skeleton-hero" />
+        <div style={{ display: 'flex', gap: 10, padding: '0 var(--px) 12px' }}>
+          <div className="skeleton skeleton-stat" />
+          <div className="skeleton skeleton-stat" />
+          <div className="skeleton skeleton-stat" />
+        </div>
+        <div className="skeleton skeleton-row" />
+        <div className="skeleton skeleton-row" />
+        <div className="skeleton skeleton-row" />
+        <div className="skeleton skeleton-narrow" style={{ marginTop: 8 }} />
+      </div>
+    );
   }
 
   const handleExitDemo = async () => {
@@ -249,7 +269,7 @@ export default function Dashboard() {
               const catBudgPct  = catBudget?.budget > 0 ? Math.round((item.total / catBudget.budget) * 100) : null;
               const budgetWarn  = catBudgPct !== null && catBudgPct >= 80;
               return (
-                <motion.div key={i} variants={itemVariants} className="cat-bar-row">
+                <motion.div key={item.category.id ?? i} variants={itemVariants} className="cat-bar-row">
                   <div className="cat-bar-left">
                     <span className="cat-bar-icon">{item.category.icon}</span>
                     <div>

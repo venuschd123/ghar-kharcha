@@ -1,18 +1,18 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
+import { usePro } from './ProContext'; // consume once — no duplicate query
 
 const ProjectContext = createContext(null);
 
-/** Free tier: 1 project. Pro: unlimited. */
 export const FREE_PROJECT_LIMIT = 1;
 
 export function ProjectProvider({ children }) {
   const projects = useLiveQuery(() => db.projects.orderBy('createdAt').toArray(), [], []);
-  const proSetting = useLiveQuery(() => db.settings.get('pro_status'));
-  const isPro = proSetting?.value === 'pro' || proSetting?.value === 'trial';
-
   const [activeProjectId, setActiveProjectId] = useState(null);
+
+  // Read isPro from ProContext — do NOT re-query pro_status here (causes double re-render cascade)
+  const { isPro } = usePro();
 
   useEffect(() => {
     db.settings.get('activeProjectId').then(s => {
@@ -35,9 +35,7 @@ export function ProjectProvider({ children }) {
   };
 
   const createProject = async (name, budget = 0, sqft = 0) => {
-    if (!canCreateProject) {
-      throw new Error('UPGRADE_REQUIRED');
-    }
+    if (!canCreateProject) throw new Error('UPGRADE_REQUIRED');
     const id = await db.projects.add({
       name, budget, sqft,
       createdAt: new Date().toISOString(),

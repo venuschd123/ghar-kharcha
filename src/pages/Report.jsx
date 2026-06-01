@@ -8,6 +8,7 @@ import { Download, FileSpreadsheet, BarChart2, TrendingUp, ArrowUpRight, ArrowDo
 import { useProject } from '../context/ProjectContext';
 import { usePro, PRO_FEATURES } from '../context/ProContext';
 import UpgradePrompt from '../components/UpgradePrompt';
+import { useToast } from '../components/Toast';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LineChart, Line, CartesianGrid,
 } from 'recharts';
@@ -66,6 +67,7 @@ function CustomTooltip({ active, payload, label }) {
 export default function Report() {
   const { activeProject } = useProject();
   const { isPro } = usePro();
+  const showToast = useToast();
   const categories = useLiveQuery(() => db.categories.toArray());
   const vendors = useLiveQuery(
     () => activeProject ? db.vendors.where('projectId').equals(activeProject.id).toArray() : [],
@@ -135,9 +137,11 @@ export default function Report() {
     try {
       await exportToPDF(activeProject, filtered, categories, categoryBreakdown, vendors);
     } catch (e) {
-      console.error('PDF export failed:', e);
+      // Surface failure to user — silent swallow is unacceptable on a finance app
+      showToast?.('PDF export failed. Try again or check storage space.', { duration: 5000 });
+    } finally {
+      setExporting(false);
     }
-    setExporting(false);
   };
 
   const handleExportExcel = async () => {
@@ -147,9 +151,10 @@ export default function Report() {
       const { exportToExcel } = await import('../utils/excelExport');
       await exportToExcel(activeProject, filtered, categories, vendors);
     } catch (e) {
-      console.error('Excel export failed:', e);
+      showToast?.('Excel export failed. Try again.', { duration: 5000 });
+    } finally {
+      setExportingXlsx(false);
     }
-    setExportingXlsx(false);
   };
 
   return (
