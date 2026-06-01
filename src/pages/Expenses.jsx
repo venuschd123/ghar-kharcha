@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
 import { formatCurrency, formatDate, formatDateLabel, groupByDate } from '../utils/formatters';
-import { Check, Search, Receipt } from 'lucide-react';
+import { Check, Search, Receipt, Filter } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
 
 export default function Expenses() {
@@ -16,7 +16,7 @@ export default function Expenses() {
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState(null);
 
-  if (!categories || !activeProject || !expenses) return <div className="page-loading">Loading…</div>;
+  if (!categories || !activeProject || !expenses) return <div className="page-loading">Loading...</div>;
 
   let filtered = expenses;
   if (filterCat) filtered = filtered.filter(e => e.categoryId === filterCat);
@@ -31,23 +31,24 @@ export default function Expenses() {
   }
 
   const grouped = groupByDate(filtered);
-  const totalFiltered = filtered.reduce((s, e) => s + e.amount, 0);
+  const totalFiltered = filtered.filter(e => !e.isPending).reduce((s, e) => s + e.amount, 0);
 
   return (
     <div className="page expenses-page">
       <header className="page-header">
         <h1 className="page-title">Expenses</h1>
-        <span style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 600 }}>
-          {filtered.length} entries
+        <span style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 600, background: 'var(--surface)', padding: '5px 10px', borderRadius: 20 }}>
+          {filtered.length}
         </span>
       </header>
 
       {/* Search */}
       <div className="expenses-search-wrap">
+        <Search size={15} className="expenses-search-icon" style={{ position: 'absolute', left: 'calc(var(--px) + 13px)', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }} />
         <input
           type="text"
           className="expenses-search"
-          placeholder="Search by note, category, amount…"
+          placeholder="Search note, category, amount..."
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
@@ -56,49 +57,51 @@ export default function Expenses() {
       {/* Category filter chips */}
       <div style={{ display: 'flex', gap: 6, padding: '0 var(--px) 12px', overflowX: 'auto', scrollbarWidth: 'none' }}>
         <button
+          onClick={() => setFilterCat(null)}
           style={{
-            padding: '6px 14px', borderRadius: 20, whiteSpace: 'nowrap',
-            fontSize: 12, fontWeight: 700, flexShrink: 0,
+            padding: '6px 14px', borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
+            fontSize: 12, fontWeight: 700, cursor: 'pointer',
             background: !filterCat ? 'var(--accent-dim)' : 'var(--surface)',
             color: !filterCat ? 'var(--accent)' : 'var(--text-2)',
-            border: !filterCat ? '1px solid var(--accent-border)' : '1px solid transparent',
+            border: !filterCat ? '1.5px solid var(--accent-border)' : '1.5px solid transparent',
           }}
-          onClick={() => setFilterCat(null)}
         >
           All
         </button>
         {categories.map(cat => (
           <button
             key={cat.id}
+            onClick={() => setFilterCat(filterCat === cat.id ? null : cat.id)}
             style={{
               padding: '6px 12px', borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
-              fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4,
+              fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 5,
               background: filterCat === cat.id ? cat.color + '18' : 'var(--surface)',
               color: filterCat === cat.id ? cat.color : 'var(--text-2)',
-              border: filterCat === cat.id ? `1px solid ${cat.color}44` : '1px solid transparent',
+              border: filterCat === cat.id ? `1.5px solid ${cat.color}44` : '1.5px solid transparent',
             }}
-            onClick={() => setFilterCat(filterCat === cat.id ? null : cat.id)}
           >
             {cat.icon} {cat.name.split(' ')[0]}
           </button>
         ))}
       </div>
 
-      {/* Total */}
+      {/* Total strip */}
       {filtered.length > 0 && (
         <div className="expenses-total">
-          Total: <strong>{formatCurrency(totalFiltered)}</strong>
+          {search || filterCat ? 'Filtered total: ' : 'Total paid: '}
+          <strong>{formatCurrency(totalFiltered)}</strong>
         </div>
       )}
 
-      {/* Grouped list */}
+      {/* List */}
       {grouped.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">
-            {search || filterCat ? <Search size={24} /> : <Receipt size={24} />}
+            {search || filterCat ? <Search size={26} /> : <Receipt size={26} />}
           </div>
           <h3>{search || filterCat ? 'No results' : 'No expenses yet'}</h3>
-          <p>{search || filterCat ? 'Try a different search or filter.' : 'Add your first expense using the + button.'}</p>
+          <p>{search || filterCat ? 'Try a different filter or search term.' : 'Tap the + button to log your first expense.'}</p>
         </div>
       ) : (
         grouped.map(([dateKey, exps]) => {
@@ -115,20 +118,24 @@ export default function Expenses() {
                   return (
                     <div key={exp.id} className={`expense-item-wrap${exp.isPending ? ' pending' : ''}`}>
                       <Link to={`/edit/${exp.id}`} className="expense-item">
-                        <div className="expense-icon" style={{ background: (cat?.color || '#999') + '22' }}>
-                          {cat?.icon || '❓'}
+                        <div className="expense-icon" style={{ background: (cat?.color || '#999') + '20' }}>
+                          {cat?.icon || '?'}
                         </div>
                         <div className="expense-details">
-                          <div className="expense-cat">
+                          <div className="expense-cat" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             {cat?.name || 'Unknown'}
-                            {exp.isPending && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: 'var(--gold)', background: 'var(--gold-dim)', padding: '1px 6px', borderRadius: 4 }}>PENDING</span>}
+                            {exp.isPending && (
+                              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--gold)', background: 'var(--gold-dim)', padding: '1px 6px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                                Due
+                              </span>
+                            )}
                           </div>
                           <div className="expense-note">
-                            {exp.photo && <span style={{ marginRight: 4, fontSize: 11, color: 'var(--accent)' }}>+photo</span>}
+                            {exp.photo && <span style={{ marginRight: 4, color: 'var(--accent)', fontWeight: 700, fontSize: 10 }}>+photo</span>}
                             {exp.note || formatDate(exp.date)}
                           </div>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
                           <div className="expense-amount" style={exp.isPending ? { color: 'var(--gold)' } : {}}>
                             {formatCurrency(exp.amount)}
                           </div>
@@ -141,9 +148,8 @@ export default function Expenses() {
                             e.stopPropagation();
                             await db.expenses.update(exp.id, { isPending: false });
                           }}
-                          title="Mark as paid"
                         >
-                          <Check size={13} /> Paid
+                          <Check size={11} /> Mark Paid
                         </button>
                       )}
                     </div>

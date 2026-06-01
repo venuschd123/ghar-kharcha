@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { Building2, HardHat, ArrowRight, Eye } from 'lucide-react';
 import { db, DEFAULT_CATEGORIES, DEFAULT_PHASES, seedDemoData } from '../db';
 
 const BUDGET_RANGES = [
-  { label: '₹10L – 25L',  value: 1750000 },
-  { label: '₹25L – 75L',  value: 5000000 },
-  { label: '₹75L – 2Cr', value: 13750000 },
-  { label: '₹2Cr+',       value: 25000000 },
+  { label: '10L - 25L',  value: 1750000 },
+  { label: '25L - 75L',  value: 5000000 },
+  { label: '75L - 2Cr',  value: 13750000 },
+  { label: '2Cr+',       value: 25000000 },
 ];
 
 export default function Onboarding({ onDone }) {
@@ -18,13 +19,8 @@ export default function Onboarding({ onDone }) {
 
   const handleDemo = async () => {
     setLoadingDemo(true);
-    try {
-      await seedDemoData();
-      onDone();
-    } catch (err) {
-      console.error('Demo seeding failed:', err);
-      setLoadingDemo(false);
-    }
+    try { await seedDemoData(); onDone(); }
+    catch (err) { console.error('Demo failed:', err); setLoadingDemo(false); }
   };
 
   const handleFinish = async () => {
@@ -64,35 +60,50 @@ export default function Onboarding({ onDone }) {
   return (
     <div className="onboarding">
       <div className="onboarding-body">
-        {/* Slide 0: Welcome */}
+
+        {/* ─── Slide 0: Welcome ───────────────────────────── */}
         <div className={`ob-slide${slide === 0 ? ' active' : slide > 0 ? ' prev' : ''}`}>
-          <div className="ob-illustration">🏠</div>
-          <h1 className="ob-title">Welcome to{'\n'}Ghar Kharcha</h1>
-          <p className="ob-desc">
-            Track every rupee of your home construction — per payment, per contractor, per phase. 100% offline, always private.
-          </p>
-          <div style={{ marginTop: 32, width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <button className="btn btn-primary btn-full btn-lg" onClick={() => setSlide(1)}>
-              Start Setup →
-            </button>
-            <button
-              className="btn btn-secondary btn-full"
-              onClick={handleDemo}
-              disabled={loadingDemo}
-              style={{ fontSize: 14 }}
-            >
-              {loadingDemo ? 'Loading demo…' : '👁️ See a sample project first'}
-            </button>
+          <div className="ob-hero" style={{ flex: 1, justifyContent: 'center' }}>
+            <div className="ob-icon-wrap">
+              <Building2 size={38} strokeWidth={1.5} />
+            </div>
+            <h1 className="ob-title">{"Welcome to\nGhar Kharcha"}</h1>
+            <p className="ob-desc">
+              Track every rupee of your home construction — per payment, per contractor, per phase. 100% offline, always private.
+            </p>
+          </div>
+
+          <div className="ob-footer">
+            <div style={{ width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button className="ob-btn-primary" onClick={() => setSlide(1)}>
+                Get Started <ArrowRight size={18} />
+              </button>
+              <button className="ob-demo-btn" onClick={handleDemo} disabled={loadingDemo}>
+                <Eye size={16} />
+                {loadingDemo ? 'Loading demo...' : 'View a sample project first'}
+              </button>
+            </div>
+            <div className="ob-dots">
+              <div className="ob-dot active" />
+              <div className="ob-dot" />
+            </div>
           </div>
         </div>
 
-        {/* Slide 1: Project setup */}
-        <div className={`ob-slide${slide === 1 ? ' active' : slide > 1 ? ' prev' : ''}`}>
-          <div className="ob-illustration">🏗️</div>
-          <h1 className="ob-title">Set up your{'\n'}project</h1>
-          <div className="ob-form">
+        {/* ─── Slide 1: Project setup ─────────────────────── */}
+        <div className={`ob-slide${slide === 1 ? ' active' : ''}`}>
+          <div className="ob-hero" style={{ paddingBottom: 16 }}>
+            <div className="ob-icon-wrap">
+              <HardHat size={38} strokeWidth={1.5} />
+            </div>
+            <h1 className="ob-title">{"Set up your\nproject"}</h1>
+            <p className="ob-desc">You can always change these later in Settings.</p>
+          </div>
+
+          <div className="ob-form-body">
+            {/* Project name */}
             <div>
-              <div className="ob-input-label">Project Name</div>
+              <label className="ob-label">Project Name</label>
               <input
                 className="ob-input"
                 type="text"
@@ -100,61 +111,57 @@ export default function Onboarding({ onDone }) {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 maxLength={60}
+                autoFocus
               />
             </div>
+
+            {/* Budget range */}
             <div>
-              <div className="ob-input-label">Budget Range (optional)</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <label className="ob-label">Estimated Budget (optional)</label>
+              <div className="ob-budget-grid">
                 {BUDGET_RANGES.map(r => (
                   <button
                     key={r.value}
+                    className={`ob-budget-pill${budgetRange === r.value ? ' active' : ''}`}
                     onClick={() => setBudgetRange(budgetRange === r.value ? null : r.value)}
-                    style={{
-                      padding: '10px 8px', borderRadius: 12, border: 'none', cursor: 'pointer',
-                      fontFamily: 'inherit', fontSize: 13, fontWeight: 700,
-                      background: budgetRange === r.value ? 'var(--accent-dim)' : 'var(--surface)',
-                      color: budgetRange === r.value ? 'var(--accent)' : 'var(--text-2)',
-                      outline: budgetRange === r.value ? '2px solid var(--accent-border)' : 'none',
-                    }}
                   >
                     {r.label}
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Area */}
             <div>
-              <div className="ob-input-label">Total Area (sq. ft.)</div>
-              <input
-                className="ob-input"
-                type="number"
-                placeholder="e.g. 1200"
-                value={sqft}
-                onChange={e => setSqft(e.target.value)}
-                inputMode="numeric"
-              />
-              <div className="ob-input-hint">Used to show your ₹/sqft cost on the dashboard</div>
+              <label className="ob-label">Total Area (optional)</label>
+              <div className="ob-prefix-wrap">
+                <span className="ob-prefix"></span>
+                <input
+                  className="ob-prefix-input"
+                  type="number"
+                  placeholder="e.g. 1200 sqft"
+                  value={sqft}
+                  onChange={e => setSqft(e.target.value)}
+                  inputMode="numeric"
+                />
+              </div>
+              <div className="ob-input-hint">Used to show cost per sqft on your dashboard</div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="ob-footer">
-        <div className="ob-dots">
-          <div className={`ob-dot${slide === 0 ? ' active' : ''}`} />
-          <div className={`ob-dot${slide === 1 ? ' active' : ''}`} />
-        </div>
-        {slide === 0 ? null : (
-          <>
-            <button
-              className="btn btn-primary btn-full btn-lg"
-              onClick={handleFinish}
-              disabled={saving}
-            >
-              {saving ? 'Setting up…' : 'Start Tracking →'}
+          <div className="ob-footer">
+            <div className="ob-dots">
+              <div className="ob-dot" />
+              <div className="ob-dot active" />
+            </div>
+            <button className="ob-btn-primary" onClick={handleFinish} disabled={saving} style={{ width: '100%', maxWidth: 380 }}>
+              {saving ? 'Setting up...' : 'Start Tracking'}
+              {!saving && <ArrowRight size={18} />}
             </button>
-            <button className="ob-back" onClick={() => setSlide(0)}>← Back</button>
-          </>
-        )}
+            <button className="ob-btn-ghost" onClick={() => setSlide(0)}>Back</button>
+          </div>
+        </div>
+
       </div>
     </div>
   );

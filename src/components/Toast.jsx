@@ -13,7 +13,8 @@ export function ToastProvider({ children }) {
 
   const show = useCallback((message, { undoFn, duration = 4000 } = {}) => {
     setToast({ message, undoFn, duration });
-    setVisible(true);
+    // Use a small delay so the CSS transition fires
+    requestAnimationFrame(() => setVisible(true));
   }, []);
 
   const dismiss = useCallback(() => {

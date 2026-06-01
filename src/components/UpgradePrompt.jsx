@@ -1,87 +1,127 @@
 import { useState } from 'react';
-import { X, Zap } from 'lucide-react';
+import { X, Zap, Check } from 'lucide-react';
 import { activateTrial, activatePro } from '../context/ProContext';
+
+const FEATURE_NAMES = {
+  multi_project:      'Multiple Projects',
+  ocr_scan:           'OCR Receipt Scanning',
+  excel_export:       'Excel Export',
+  comparison_charts:  'Comparison Analytics',
+  pin_lock:           'PIN Lock',
+  advanced_pdf:       'Advanced PDF Reports',
+};
+
+const PRO_PERKS = [
+  'Unlimited projects',
+  'Excel export with full breakdown',
+  'OCR receipt scanning',
+  'Comparison analytics',
+  'Priority support',
+];
 
 export default function UpgradePrompt({ feature, onClose, onUpgraded }) {
   const [mode, setMode] = useState('prompt'); // 'prompt' | 'code'
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
-
-  const featureNames = {
-    multi_project: 'Multiple Projects',
-    ocr_scan: 'OCR Receipt Scanning',
-    excel_export: 'Excel Export',
-    comparison_charts: 'Comparison Analytics',
-    pin_lock: 'PIN Lock',
-    advanced_pdf: 'Advanced PDF Reports',
-  };
+  const [loading, setLoading] = useState(false);
 
   const handleTrial = async () => {
+    setLoading(true);
     await activateTrial();
+    setLoading(false);
     onUpgraded?.();
     onClose?.();
   };
 
   const handleCode = async () => {
+    setLoading(true);
+    setError('');
     const ok = await activatePro(code.trim().toUpperCase());
+    setLoading(false);
     if (ok) { onUpgraded?.(); onClose?.(); }
-    else setError('Invalid code. Purchase at gharkharchaapp.in');
+    else setError('Invalid code. Buy at gharkharchaapp.in');
   };
 
   return (
     <div className="bottom-overlay" onClick={onClose}>
-      <div className="bottom-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: '80vh' }}>
+      <div className="bottom-sheet" onClick={e => e.stopPropagation()}>
         <div className="sheet-handle" />
-        <div style={{ padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        <div style={{ padding: '16px 20px 28px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
-                  <Zap size={16} />
-                </div>
-                <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)' }}>Upgrade to Pro</span>
+              <div className="upgrade-badge">
+                <Zap size={11} /> Pro
               </div>
-              {feature && <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{featureNames[feature]} requires Pro</div>}
+              <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.3px' }}>
+                Unlock Ghar Kharcha Pro
+              </div>
+              {feature && (
+                <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 2 }}>
+                  {FEATURE_NAMES[feature]} requires Pro
+                </div>
+              )}
             </div>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 4 }}><X size={18} /></button>
+            <button
+              onClick={onClose}
+              style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--surface)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', flexShrink: 0 }}
+            >
+              <X size={16} />
+            </button>
           </div>
 
-          {/* Pro features list */}
-          <div style={{ background: 'var(--surface)', borderRadius: 14, padding: 14 }}>
-            {Object.entries(featureNames).map(([k, label]) => (
-              <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', fontSize: 13 }}>
-                <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--green-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontSize: 10, color: 'var(--green)', fontWeight: 900 }}>✓</span>
+          {/* Perks list */}
+          <div style={{ background: 'var(--surface)', borderRadius: 14, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {PRO_PERKS.map(perk => (
+              <div key={perk} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+                <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Check size={11} color="var(--accent)" strokeWidth={3} />
                 </div>
-                <span style={{ color: 'var(--text)', fontWeight: 600 }}>{label}</span>
+                <span style={{ color: 'var(--text)', fontWeight: 600 }}>{perk}</span>
               </div>
             ))}
           </div>
 
           {/* Pricing */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <div style={{ background: 'var(--accent-dim)', borderRadius: 14, padding: 14, border: '2px solid var(--accent-border)' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Annual</div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--accent)', marginTop: 4 }}>₹499</div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)' }}>per year · ₹42/month</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ background: 'var(--accent-dim)', borderRadius: 14, padding: '14px 12px', border: '2px solid var(--accent-border)' }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Annual</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--accent)', marginTop: 4, lineHeight: 1 }}>499</div>
+              <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 3 }}>/ year  42/mo</div>
             </div>
-            <div style={{ background: 'var(--green-dim)', borderRadius: 14, padding: 14, border: '1px solid rgba(5,150,105,0.2)' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Lifetime</div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--green)', marginTop: 4 }}>₹999</div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)' }}>one-time · forever</div>
+            <div style={{ background: 'var(--green-dim)', borderRadius: 14, padding: '14px 12px', border: '1px solid rgba(16,185,129,0.2)' }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Lifetime</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--green)', marginTop: 4, lineHeight: 1 }}>999</div>
+              <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 3 }}>one-time, forever</div>
             </div>
           </div>
 
           {mode === 'prompt' ? (
-            <>
-              <button onClick={handleTrial} style={{ padding: '14px', borderRadius: 14, border: 'none', cursor: 'pointer', background: 'var(--accent)', color: '#fff', fontSize: 15, fontWeight: 700, fontFamily: 'inherit' }}>
-                Try Pro Free — 7 Days
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button
+                onClick={handleTrial}
+                disabled={loading}
+                style={{
+                  width: '100%', height: 50, borderRadius: 14, border: 'none', cursor: 'pointer',
+                  background: 'var(--accent)', color: '#fff', fontSize: 15, fontWeight: 700,
+                  fontFamily: 'inherit', boxShadow: '0 4px 14px var(--accent-glow)',
+                  opacity: loading ? 0.7 : 1,
+                }}
+              >
+                {loading ? 'Activating...' : 'Try Pro Free for 7 Days'}
               </button>
-              <button onClick={() => setMode('code')} style={{ padding: '10px', borderRadius: 12, border: '1px solid var(--border)', cursor: 'pointer', background: 'transparent', color: 'var(--text-2)', fontSize: 13, fontFamily: 'inherit' }}>
+              <button
+                onClick={() => setMode('code')}
+                style={{
+                  width: '100%', height: 44, borderRadius: 12, cursor: 'pointer',
+                  background: 'transparent', border: '1.5px solid var(--border-mid)',
+                  color: 'var(--text-2)', fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+                }}
+              >
                 I have a purchase code
               </button>
-            </>
+            </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <input
@@ -89,14 +129,20 @@ export default function UpgradePrompt({ feature, onClose, onUpgraded }) {
                 placeholder="Enter code (e.g. GK-XXXXX)"
                 value={code}
                 onChange={e => { setCode(e.target.value); setError(''); }}
-                style={{ textTransform: 'uppercase', letterSpacing: '1px' }}
+                style={{ textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700 }}
                 autoFocus
               />
-              {error && <div style={{ fontSize: 12, color: 'var(--danger)' }}>{error}</div>}
-              <button onClick={handleCode} style={{ padding: '12px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'var(--accent)', color: '#fff', fontSize: 14, fontWeight: 700, fontFamily: 'inherit' }}>
-                Activate
+              {error && <div style={{ fontSize: 12, color: 'var(--danger)', fontWeight: 600 }}>{error}</div>}
+              <button
+                onClick={handleCode} disabled={!code.trim() || loading}
+                style={{ width: '100%', height: 48, borderRadius: 12, border: 'none', cursor: 'pointer', background: 'var(--accent)', color: '#fff', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}
+              >
+                {loading ? 'Checking...' : 'Activate'}
               </button>
-              <button onClick={() => setMode('prompt')} style={{ padding: '10px', borderRadius: 12, border: 'none', cursor: 'pointer', background: 'transparent', color: 'var(--text-3)', fontSize: 12, fontFamily: 'inherit' }}>
+              <button
+                onClick={() => setMode('prompt')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13, fontFamily: 'inherit', padding: '4px 0' }}
+              >
                 Back
               </button>
             </div>
