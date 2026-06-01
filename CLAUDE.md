@@ -99,6 +99,47 @@ All fixes live at the bottom of `src/index.css` under "DESIGN AUDIT FIXES":
 - `/terms` — Terms of Use (12 sections: nature of app, data storage, OCR/photos, Pro features, no-warranty, liability, governing law India)
 - Both linked from Settings → About section
 
+## Features Added (June 2026 — Session 2)
+
+### Dashboard Overhaul
+- **Spending Velocity row** — This Week vs Last Week with trend arrow (green=down, red=up)
+- **Top Vendors mini-strip** — scrollable cards with vendor name + total spend
+- **Budget at Risk banner** — amber warning when projected weekly burn will exceed budget
+- **Health Score badge** — Excellent/On Track/At Risk/Critical, calculated from phases done %, pending dues %, budget remaining %, weekly entries. Tap ? for tooltip.
+- **Tappable stat cards** — Today → /expenses filtered for today, This Week → week filter, Entries → all
+- **Ring shimmer** — animated highlight on SVG budget ring track (compositor-only: strokeDashoffset)
+- **Vendor names in Recent** — shows "Category · Vendor Name" in recent expense list
+- **Fresh project empty state** — 3 quick-action buttons (Add Expense, Add Vendor, Set Budget)
+
+### SEO & Discoverability
+- `<html lang="en-IN">`, full meta description, keywords, canonical URL
+- Open Graph + Twitter Card meta tags with og:url, og:image, og:locale
+- JSON-LD `SoftwareApplication` schema with offers (free + ₹299 Pro)
+- PWA manifest: lang, categories, screenshots, improved description
+- `public/robots.txt` and `public/sitemap.xml`
+- **Viral share hook**: after 10th expense, dismissible banner with navigator.share
+- Settings → About: large prominent "Share" button, "Rate this app" link, "Home Construction Tracker" subtitle
+
+### Pro Plan Hardening
+- **SHA-256 code validation** (`src/utils/proCode.js`): 20 real hashes stored, salt hardcoded (accepted tradeoff for offline)
+- **Rate limiting**: 5 wrong attempts in 24h → lockout with support@gharkharcha.app message
+- **Trial expiry**: 30 days from activation, shows days remaining, expired state with upgrade CTA
+- **Buy Pro ₹299/year** + **Lifetime ₹999** buttons in UpgradePrompt (Razorpay TODO placeholder)
+- **PIN_LOCK removed from PRO_FEATURES** — security is now always free
+- Settings Pro card shows trial days remaining and expired state
+
+### Security
+- CSP `<meta>` tag in index.html
+- Backup import: 5MB size limit, 50K entry sanity check, `doImportRaw` extracted (no recursive loop)
+- Prototype pollution guard on backup JSON parse
+- Zero `dangerouslySetInnerHTML` confirmed (grepped)
+
+### Onboarding
+- Slide 0: new headline "Every rupee matters. Track it all." + "Home Construction Tracker" subtitle
+- New Slide 1 (feature tour): 3 cards — Track Expenses, Manage Vendors, See Reports
+- 3-dot pagination; Skip button on feature tour slide
+- Post-onboarding FAB hint: "Tap + to log your first expense" floating tooltip (dismisses on tap or first save)
+
 ## Features Added (June 2026)
 - **Vendor editing**: pencil button in VendorDetail header → EditVendorSheet (name/phone/type pre-filled)
 - **Expenses search**: vendor name now included in search (note, category, vendor, amount)
