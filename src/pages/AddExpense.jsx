@@ -160,7 +160,15 @@ export default function AddExpense() {
     };
     try {
       if (isEdit) await db.expenses.update(Number(id), data);
-      else await db.expenses.add(data);
+      else {
+        await db.expenses.add(data);
+        // Viral hook: show share prompt after 10th expense (once per install)
+        const total = await db.expenses.count();
+        if (total === 10) {
+          const prompted = await db.settings.get('share_prompted');
+          if (!prompted?.value) await db.settings.put({ key: 'share_needed', value: 'true' });
+        }
+      }
       navigate(-1);
     } catch (err) {
       console.error('Save failed:', err);

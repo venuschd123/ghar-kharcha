@@ -7,7 +7,7 @@ import { formatCurrency, formatCompact, formatDateLabel, groupByCategory, getTod
 import {
   ArrowRight, Settings, AlertCircle, TrendingUp, TrendingDown, Calendar,
   ReceiptText, HardHat, CheckCircle2, Building2, Clock, Plus, Trophy,
-  Users, Zap, Info, Store, MapPin,
+  Users, Zap, Info, Store, Share2, X,
 } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
 import ProjectSwitcher from '../components/ProjectSwitcher';
@@ -171,8 +171,27 @@ export default function Dashboard() {
     [activeProject?.id], []
   );
   const isDemo = useLiveQuery(() => db.settings.get('isDemo'), [], null);
+  const shareNeeded = useLiveQuery(() => db.settings.get('share_needed'), [], null);
   const { style: tiltStyle, handlers: tiltHandlers } = useTilt(6);
   const [confirmExit, setConfirmExit] = useState(false);
+
+  const dismissShare = async () => {
+    await db.settings.put({ key: 'share_prompted', value: 'true' });
+    await db.settings.delete('share_needed');
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.share({
+        title: 'Ghar Kharcha — Home Construction Tracker',
+        text: 'Track every rupee of your home construction. Labour, materials, contractors, phases — all offline, all free. 🏠',
+        url: 'https://ghar-kharcha-one.vercel.app/',
+      });
+    } catch {
+      // user cancelled share or API not available — fail silently
+    }
+    dismissShare();
+  };
 
   if (!activeProject || !categories || !expenses || !phases) {
     return (
@@ -298,6 +317,29 @@ export default function Dashboard() {
           <button onClick={() => setConfirmExit(true)} className="demo-exit-btn"
             title="Clears sample data and starts your real project">
             Start Fresh
+          </button>
+        </motion.div>
+      )}
+
+      {/* Viral share prompt — appears once after 10th expense */}
+      {shareNeeded?.value === 'true' && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+          className="share-prompt-banner"
+        >
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>
+              Enjoying Ghar Kharcha?
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
+              Share with someone building their dream home 🏠
+            </div>
+          </div>
+          <button onClick={handleShare} className="share-prompt-btn">
+            <Share2 size={12} /> Share
+          </button>
+          <button onClick={dismissShare} className="share-prompt-dismiss" aria-label="Dismiss">
+            <X size={14} />
           </button>
         </motion.div>
       )}

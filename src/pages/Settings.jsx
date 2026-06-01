@@ -704,6 +704,7 @@ export default function Settings() {
             <Building2 size={28} strokeWidth={1.5} color="var(--accent)" />
           </div>
           <div className="about-title">Ghar Kharcha</div>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 500, marginTop: -2, marginBottom: 4 }}>Home Construction Tracker</div>
           <div className="about-ver">Version 1.0.0</div>
           <div className="about-desc">
             Track every rupee of your home construction or renovation.
@@ -714,21 +715,45 @@ export default function Settings() {
             <span className="about-badge"><WifiOff size={12} /> Works Offline</span>
             <span className="about-badge"><Flag size={12} /> Made in India</span>
           </div>
-          <div style={{ display: 'flex', gap: 16, marginTop: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/privacy" style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>
+
+          {/* Share App — prominent button */}
+          <button
+            onClick={() => {
+              if (navigator.share) {
+                navigator.share({
+                  title: 'Ghar Kharcha — Home Construction Tracker',
+                  text: 'Track every rupee of your home construction. Labour, materials, contractors, phases — all offline, all free. 🏠',
+                  url: 'https://ghar-kharcha-one.vercel.app/',
+                });
+              }
+            }}
+            style={{
+              width: '100%', padding: '13px 0', borderRadius: 14,
+              background: 'var(--accent)', color: '#fff',
+              border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+              fontSize: 14, fontWeight: 700, marginTop: 12,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              boxShadow: '0 3px 12px var(--accent-glow)',
+            }}
+          >
+            <Share2 size={16} /> Share with someone building their home 🏠
+          </button>
+
+          {/* Rate the app + legal links */}
+          <div style={{ display: 'flex', gap: 16, marginTop: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a
+              href="https://ghar-kharcha-one.vercel.app/#rate"
+              // TODO: replace with Play Store / App Store rating URL when listed
+              style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}
+            >
+              ⭐ Rate Ghar Kharcha
+            </a>
+            <Link to="/privacy" style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 600 }}>
               Privacy Policy
             </Link>
-            <Link to="/terms" style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
-              <ScrollText size={12} /> Terms of Use
+            <Link to="/terms" style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
+              <ScrollText size={12} /> Terms
             </Link>
-            {navigator.share && (
-              <button
-                onClick={() => navigator.share({ title: 'Ghar Kharcha', text: 'Track every rupee of your home construction. 100% offline, privacy first.', url: window.location.origin })}
-                style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4 }}
-              >
-                <Share2 size={13} /> Share App
-              </button>
-            )}
           </div>
         </div>
       </div>

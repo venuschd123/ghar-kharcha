@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ghar-kharcha-one.vercel.app/sitemap.xml

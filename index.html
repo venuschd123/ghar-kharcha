@@ -1,23 +1,82 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-IN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#7C3AED" />
+    <meta name="theme-color" content="#10B981" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="description" content="Track every rupee of your home construction or renovation. 100% offline. Made in India." />
-    <meta property="og:title" content="Ghar Kharcha — Construction Cost Tracker" />
-    <meta property="og:description" content="Track every rupee of your home construction. Per payment, per contractor, per phase. 100% offline, always private." />
+
+    <!-- Primary SEO -->
+    <title>Ghar Kharcha - Home Construction Cost Tracker India</title>
+    <meta name="description" content="Track every rupee of your home construction. Labour, materials, contractors, phases — all in one free offline app. Works in India. Ghar Kharcha." />
+    <meta name="keywords" content="home construction cost tracker India, ghar kharcha, building cost calculator, contractor payment tracker, construction expense app, grih nirman kharch, home building tracker, labour material tracker" />
+    <link rel="canonical" href="https://ghar-kharcha-one.vercel.app/" />
+
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; font-src 'self' data:;" />
+
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/icon-512.png" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Ghar Kharcha — Construction Cost Tracker" />
-    <meta name="twitter:description" content="Track every rupee of your home construction. 100% offline." />
-    <meta name="keywords" content="construction cost tracker, home building expenses, ghar kharcha, building cost calculator, contractor payment tracker, India construction app" />
+    <meta property="og:title" content="Ghar Kharcha — Home Construction Tracker" />
+    <meta property="og:description" content="Track every rupee of your home construction. Labour, materials, contractors and phases — all offline, all private. Free app for India." />
+    <meta property="og:image" content="https://ghar-kharcha-one.vercel.app/icon-512.png" />
+    <meta property="og:url" content="https://ghar-kharcha-one.vercel.app/" />
+    <meta property="og:site_name" content="Ghar Kharcha" />
+    <meta property="og:locale" content="en_IN" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Ghar Kharcha — Home Construction Tracker" />
+    <meta name="twitter:description" content="Track every rupee of your home construction. Labour, materials, contractors, phases. 100% offline, free for India." />
+    <meta name="twitter:image" content="https://ghar-kharcha-one.vercel.app/icon-512.png" />
+
+    <!-- Icons -->
     <link rel="icon" type="image/png" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
-    <title>Ghar Kharcha - Construction Cost Tracker</title>
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Ghar Kharcha",
+      "alternateName": "Ghar Kharcha - Home Construction Tracker",
+      "description": "Free home construction cost tracker for India. Track labour, materials, contractors and phases. 100% offline.",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Android, iOS, Web",
+      "url": "https://ghar-kharcha-one.vercel.app/",
+      "inLanguage": ["en-IN", "hi-IN"],
+      "offers": [
+        {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "INR",
+          "name": "Free Plan"
+        },
+        {
+          "@type": "Offer",
+          "price": "299",
+          "priceCurrency": "INR",
+          "name": "Pro Plan",
+          "description": "Excel export, OCR scanning, unlimited projects"
+        }
+      ],
+      "featureList": [
+        "Offline-first — no internet required",
+        "Track labour, materials, contractors",
+        "Construction phase tracking",
+        "PDF and Excel expense reports",
+        "Vendor payment management",
+        "Budget tracking with alerts"
+      ],
+      "screenshot": "https://ghar-kharcha-one.vercel.app/icon-512.png",
+      "author": {
+        "@type": "Organization",
+        "name": "Ghar Kharcha"
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

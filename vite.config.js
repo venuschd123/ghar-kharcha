@@ -29,17 +29,23 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'Ghar Kharcha - Construction Cost Tracker',
-        short_name: 'Ghar Kharcha',
-        description: 'Track every rupee of your home construction. 100% offline.',
+        name: 'Ghar Kharcha - Home Construction Tracker',
+        short_name: 'GharKharcha',
+        description: 'Free home construction cost tracker for India. Track labour, materials, contractors and phases. 100% offline.',
         theme_color: '#10B981',
         background_color: '#F8FAFC',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
+        lang: 'en-IN',
+        categories: ['finance', 'productivity', 'utilities'],
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+        ],
+        screenshots: [
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', form_factor: 'narrow', label: 'Dashboard' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', form_factor: 'wide', label: 'Reports' },
         ],
       },
       workbox: {
