@@ -1,17 +1,42 @@
 import { useState, useEffect } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Plus, Users, ListChecks, Settings, WifiOff, BarChart2 } from 'lucide-react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Plus, BarChart2, PieChart, Settings, WifiOff } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import InstallPrompt from './InstallPrompt';
+
+const pageVariants = {
+  initial:  { opacity: 0, y: 8 },
+  animate:  { opacity: 1, y: 0, transition: { duration: 0.22, ease: [0.16, 1, 0.3, 1] } },
+  exit:     { opacity: 0, y: -4, transition: { duration: 0.14, ease: 'easeIn' } },
+};
+
+function AnimatedOutlet() {
+  const location = useLocation();
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={location.pathname}
+        variants={pageVariants}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        style={{ willChange: 'opacity, transform' }}
+      >
+        <Outlet />
+      </motion.div>
+    </AnimatePresence>
+  );
+}
 
 export default function Layout() {
   const [offline, setOffline] = useState(!navigator.onLine);
 
   useEffect(() => {
-    const goOff = () => setOffline(true);
-    const goOn = () => setOffline(false);
-    window.addEventListener('offline', goOff);
-    window.addEventListener('online', goOn);
-    return () => { window.removeEventListener('offline', goOff); window.removeEventListener('online', goOn); };
+    const on  = () => setOffline(false);
+    const off = () => setOffline(true);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
   }, []);
 
   return (
@@ -22,11 +47,11 @@ export default function Layout() {
         </div>
       )}
       <main className="app-main">
-        <Outlet />
+        <AnimatedOutlet />
       </main>
       <nav className="bottom-nav">
         <NavLink to="/" end className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
-          <LayoutDashboard size={21} strokeWidth={isActive => isActive ? 2.5 : 2} />
+          <LayoutDashboard size={21} strokeWidth={2} />
           <span>Home</span>
         </NavLink>
         <NavLink to="/expenses" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
@@ -38,9 +63,9 @@ export default function Layout() {
             <Plus size={26} strokeWidth={2.5} />
           </NavLink>
         </div>
-        <NavLink to="/vendors" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
-          <Users size={21} strokeWidth={2} />
-          <span>Vendors</span>
+        <NavLink to="/report" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+          <PieChart size={21} strokeWidth={2} />
+          <span>Report</span>
         </NavLink>
         <NavLink to="/settings" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
           <Settings size={21} strokeWidth={2} />
