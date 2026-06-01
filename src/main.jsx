@@ -24,6 +24,7 @@ const Vendors    = lazy(() => import('./pages/Vendors').then(m => ({ default: m.
 const VendorDetail = lazy(() => import('./pages/Vendors').then(m => ({ default: m.VendorDetail })));
 const Phases     = lazy(() => import('./pages/Phases'));
 const Privacy    = lazy(() => import('./pages/Privacy'));
+const Terms      = lazy(() => import('./pages/Terms'));
 
 // Minimal skeleton shown while a lazy chunk loads
 function PageFallback() {
@@ -122,6 +123,7 @@ function App() {
                     <Route path="/vendors/:vendorId"  element={<VendorDetail />} />
                     <Route path="/phases"             element={<Phases />} />
                     <Route path="/privacy"            element={<Privacy />} />
+                    <Route path="/terms"              element={<Terms />} />
                   </Route>
                 </Routes>
               </Suspense>

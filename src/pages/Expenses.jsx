@@ -105,13 +105,25 @@ export default function Expenses() {
         </div>
       ) : (
         grouped.map(([dateKey, exps]) => {
-          const dayTotal = exps.reduce((s, e) => s + e.amount, 0);
           return (
             <div key={dateKey} className="date-group">
-              <div className="date-group-header">
-                <span className="date-group-label">{formatDateLabel(dateKey)}</span>
-                <span className="date-group-total">{formatCurrency(dayTotal)}</span>
-              </div>
+              {(() => {
+                const paidTotal = exps.filter(e => !e.isPending).reduce((s, e) => s + e.amount, 0);
+                const pendingTotal = exps.filter(e => e.isPending).reduce((s, e) => s + e.amount, 0);
+                return (
+                  <div className="date-group-header">
+                    <span className="date-group-label">{formatDateLabel(dateKey)}</span>
+                    <span className="date-group-total">
+                      {formatCurrency(paidTotal)}
+                      {pendingTotal > 0 && (
+                        <span style={{ fontSize: 10, color: 'var(--gold)', fontWeight: 700, marginLeft: 4 }}>
+                          +{formatCurrency(pendingTotal)} due
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })()}
               <div className="date-group-list">
                 {[...exps].sort((a, b) => b.id - a.id).map(exp => {
                   const cat = categories.find(c => c.id === exp.categoryId);

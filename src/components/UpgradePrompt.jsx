@@ -39,7 +39,7 @@ export default function UpgradePrompt({ feature, onClose, onUpgraded }) {
     const ok = await activatePro(code.trim().toUpperCase());
     setLoading(false);
     if (ok) { onUpgraded?.(); onClose?.(); }
-    else setError('Invalid code. Buy at gharkharchaapp.in');
+    else setError('Invalid code. Codes are issued when you purchase Pro from our website.');
   };
 
   return (
@@ -83,18 +83,12 @@ export default function UpgradePrompt({ feature, onClose, onUpgraded }) {
             ))}
           </div>
 
-          {/* Pricing */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div style={{ background: 'var(--accent-dim)', borderRadius: 14, padding: '14px 12px', border: '2px solid var(--accent-border)' }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Annual</div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--accent)', marginTop: 4, lineHeight: 1 }}>499</div>
-              <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 3 }}>/ year  42/mo</div>
-            </div>
-            <div style={{ background: 'var(--green-dim)', borderRadius: 14, padding: '14px 12px', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Lifetime</div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--green)', marginTop: 4, lineHeight: 1 }}>999</div>
-              <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 3 }}>one-time, forever</div>
-            </div>
+          {/* Early access note */}
+          <div style={{
+            background: 'var(--accent-dim)', borderRadius: 12, padding: '10px 14px',
+            border: '1px solid var(--accent-border)', fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6,
+          }}>
+            <strong style={{ color: 'var(--accent)' }}>Early Access:</strong> Pro is free to try right now. Paid plans will be announced with advance notice before any charge.
           </div>
 
           {mode === 'prompt' ? (
@@ -109,7 +103,7 @@ export default function UpgradePrompt({ feature, onClose, onUpgraded }) {
                   opacity: loading ? 0.7 : 1,
                 }}
               >
-                {loading ? 'Activating...' : 'Try Pro Free for 7 Days'}
+                {loading ? 'Activating...' : 'Try Pro — Free'}
               </button>
               <button
                 onClick={() => setMode('code')}

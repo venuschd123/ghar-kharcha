@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
-import { Save, Trash2, Download, Upload, Info, ListChecks, FileText, Sun, Moon, Monitor, Share2, Lock, Unlock, Zap, Target, Building2, ShieldCheck, WifiOff, Flag } from 'lucide-react';
+import { Save, Trash2, Download, Upload, Info, ListChecks, FileText, Sun, Moon, Monitor, Share2, Lock, Unlock, Zap, Target, Building2, ShieldCheck, WifiOff, Flag, ScrollText } from 'lucide-react';
 import { CURRENCIES, UNITS, setCurrency, setUnit } from '../utils/formatters';
 import { useProject } from '../context/ProjectContext';
 import { usePro } from '../context/ProContext';
 import UpgradePrompt from '../components/UpgradePrompt';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { setPin, removePin, isPinEnabled } from '../components/PinLock';
 
 const THEMES = [
@@ -40,6 +41,8 @@ export default function Settings() {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [pinMode, setPinMode] = useState(null); // null | 'set' | 'remove'
   const [newPin, setNewPin] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [confirm, setConfirm] = useState(null); // { title, message, danger, onConfirm }
 
   const [localName, setLocalName] = useState(null);
   const [localBudget, setLocalBudget] = useState(null);
@@ -98,16 +101,21 @@ export default function Settings() {
   };
 
   const handlePinSave = async () => {
-    if (newPin.length < 4) { alert('PIN must be at least 4 digits'); return; }
+    if (newPin.length < 4) { setPinError('PIN must be at least 4 digits'); return; }
     await setPin(newPin);
     setNewPin('');
+    setPinError('');
     setPinMode(null);
   };
 
-  const handlePinRemove = async () => {
-    if (!window.confirm('Remove PIN lock? Anyone can access the app.')) return;
-    await removePin();
-    setPinMode(null);
+  const handlePinRemove = () => {
+    setConfirm({
+      title: 'Remove PIN Lock?',
+      message: 'Anyone with access to this device will be able to open the app.',
+      danger: true,
+      confirmLabel: 'Remove PIN',
+      onConfirm: async () => { await removePin(); setPinMode(null); setConfirm(null); },
+    });
   };
 
   const handleExport = async () => {
@@ -131,30 +139,29 @@ export default function Settings() {
     URL.revokeObjectURL(url);
   };
 
-  const handleImport = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const doImport = async (file) => {
     try {
       const raw = JSON.parse(await file.text());
       if (!raw.version || !Array.isArray(raw.expenses) || !Array.isArray(raw.categories)) {
-        alert('Invalid backup file — missing required fields.');
+        setConfirm({ title: 'Invalid Backup File', message: 'The selected file is missing required fields. Please choose a valid Ghar Kharcha backup.', danger: false, confirmLabel: 'OK', onConfirm: () => setConfirm(null) });
         return;
       }
-      if (!window.confirm(`Restore backup? This replaces all current data (${raw.expenses.length} expenses).`)) return;
 
-      // Allowlist-strip each record to guard against prototype pollution
-      const stripExpense  = ({ projectId, categoryId, vendorId, phaseId, amount, date, note, photo, isPending, createdAt }) =>
-        ({ projectId, categoryId, vendorId, phaseId, amount, date, note: note ?? '', photo: photo ?? null, isPending: !!isPending, createdAt: createdAt ?? new Date().toISOString() });
-      const stripProject  = ({ name, budget, sqft, createdAt }) =>
-        ({ name: String(name ?? 'Project'), budget: Number(budget ?? 0), sqft: Number(sqft ?? 0), createdAt: createdAt ?? new Date().toISOString() });
-      const stripCategory = ({ name, icon, color, isCustom }) =>
-        ({ name: String(name ?? ''), icon: String(icon ?? ''), color: String(color ?? '#999'), isCustom: !!isCustom });
-      const stripVendor   = ({ projectId, name, type, phone, createdAt }) =>
-        ({ projectId, name: String(name ?? ''), type: String(type ?? ''), phone: String(phone ?? ''), createdAt: createdAt ?? new Date().toISOString() });
-      const stripPhase    = ({ projectId, name, emoji, order, status, budget }) =>
-        ({ projectId, name: String(name ?? ''), emoji: String(emoji ?? ''), order: Number(order ?? 0), status: String(status ?? 'pending'), budget: Number(budget ?? 0) });
-      const stripCatBudget = ({ projectId, categoryId, budget }) =>
-        ({ projectId, categoryId, budget: Number(budget ?? 0) });
+      // Allowlist-strip + PRESERVE original IDs so all foreign key references stay valid.
+      // Tables are fully cleared before import, so there is no collision risk.
+      const safeId = id => (id != null ? Number(id) : undefined);
+      const stripProject  = ({ id, name, budget, sqft, createdAt }) =>
+        ({ id: safeId(id), name: String(name ?? 'Project'), budget: Number(budget ?? 0), sqft: Number(sqft ?? 0), createdAt: createdAt ?? new Date().toISOString() });
+      const stripCategory = ({ id, name, icon, color, isCustom }) =>
+        ({ id: safeId(id), name: String(name ?? ''), icon: String(icon ?? ''), color: String(color ?? '#999'), isCustom: !!isCustom });
+      const stripExpense  = ({ id, projectId, categoryId, vendorId, phaseId, amount, date, note, photo, isPending, createdAt }) =>
+        ({ id: safeId(id), projectId, categoryId, vendorId: vendorId ?? null, phaseId: phaseId ?? null, amount, date, note: note ?? '', photo: photo ?? null, isPending: !!isPending, createdAt: createdAt ?? new Date().toISOString() });
+      const stripVendor   = ({ id, projectId, name, type, phone, createdAt }) =>
+        ({ id: safeId(id), projectId, name: String(name ?? ''), type: String(type ?? ''), phone: String(phone ?? ''), createdAt: createdAt ?? new Date().toISOString() });
+      const stripPhase    = ({ id, projectId, name, emoji, order, status, budget }) =>
+        ({ id: safeId(id), projectId, name: String(name ?? ''), emoji: String(emoji ?? ''), order: Number(order ?? 0), status: String(status ?? 'pending'), budget: Number(budget ?? 0) });
+      const stripCatBudget = ({ id, projectId, categoryId, budget }) =>
+        ({ id: safeId(id), projectId, categoryId, budget: Number(budget ?? 0) });
 
       await db.expenses.clear();
       await db.vendors.clear();
@@ -172,21 +179,42 @@ export default function Settings() {
 
       window.location.reload();
     } catch (err) {
-      alert('Import failed: ' + err.message);
+      setConfirm({ title: 'Import Failed', message: err.message, danger: false, confirmLabel: 'OK', onConfirm: () => setConfirm(null) });
     }
   };
 
-  const handleClearAll = async () => {
-    if (!window.confirm('⚠️ Delete ALL data? This cannot be undone!')) return;
-    if (!window.confirm('Really? All expenses and settings will be permanently deleted.')) return;
-    await db.expenses.clear();
-    await db.vendors.clear();
-    await db.phases.clear();
-    await db.projects.clear();
-    await db.categories.clear();
-    await db.settings.delete('isDemo');
-    await db.settings.delete('onboardingDone');
-    window.location.reload();
+  const handleImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    // Reset input so the same file can be re-selected if needed
+    e.target.value = '';
+    setConfirm({
+      title: 'Restore Backup?',
+      message: 'This will replace ALL current data with the backup file. This cannot be undone. Export a backup first if you want to save current data.',
+      danger: true,
+      confirmLabel: 'Restore',
+      onConfirm: () => { setConfirm(null); doImport(file); },
+    });
+  };
+
+  const handleClearAll = () => {
+    setConfirm({
+      title: 'Delete All Data?',
+      message: 'Every expense, vendor, phase, and project will be permanently deleted. Export a backup first if you want to keep your data.',
+      danger: true,
+      confirmLabel: 'Delete Everything',
+      onConfirm: async () => {
+        setConfirm(null);
+        await db.expenses.clear();
+        await db.vendors.clear();
+        await db.phases.clear();
+        await db.projects.clear();
+        await db.categories.clear();
+        await db.settings.delete('isDemo');
+        await db.settings.delete('onboardingDone');
+        window.location.reload();
+      },
+    });
   };
 
   if (!projects) return <div className="page-loading">Loading…</div>;
@@ -442,14 +470,21 @@ export default function Settings() {
             </button>
           </div>
           {pinMode === 'set' && (
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <input
-                type="password" inputMode="numeric" maxLength={6} placeholder="4–6 digit PIN"
-                className="form-input" value={newPin} onChange={e => setNewPin(e.target.value.replace(/\D/g, ''))}
-                style={{ flex: 1 }} autoFocus
-              />
-              <button onClick={handlePinSave} className="btn btn-primary" style={{ flexShrink: 0 }}>Save</button>
-              <button onClick={() => { setPinMode(null); setNewPin(''); }} style={{ padding: '0 10px', borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-2)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>Cancel</button>
+            <div style={{ marginTop: 8 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="password" inputMode="numeric" maxLength={6} placeholder="4–6 digit PIN"
+                  className="form-input" value={newPin}
+                  onChange={e => { setNewPin(e.target.value.replace(/\D/g, '')); setPinError(''); }}
+                  style={{ flex: 1 }} autoFocus
+                />
+                <button onClick={handlePinSave} className="btn btn-primary" style={{ flexShrink: 0 }}>Save</button>
+                <button onClick={() => { setPinMode(null); setNewPin(''); setPinError(''); }} style={{ padding: '0 10px', borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-2)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>Cancel</button>
+              </div>
+              {pinError && <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 6, fontWeight: 600 }}>{pinError}</div>}
+              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6, lineHeight: 1.5 }}>
+                ⚠️ If you forget your PIN, export a backup first. The only recovery option is clearing browser data, which will delete all unsaved data.
+              </div>
             </div>
           )}
           {pinMode === 'remove' && (
@@ -495,16 +530,9 @@ export default function Settings() {
                   <span>{f}</span>
                 </div>
               ))}
-              <div style={{ display: 'flex', gap: 8, marginTop: 16, marginBottom: 16 }}>
-                <div className="pro-price-pill accent">
-                  <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Annual</div>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--accent)', lineHeight: 1.1 }}>499</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)' }}>/ year</div>
-                </div>
-                <div className="pro-price-pill">
-                  <div style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,.5)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Lifetime</div>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>999</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)' }}>one-time</div>
+              <div style={{ marginBottom: 4 }}>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,.45)', lineHeight: 1.5, marginBottom: 14 }}>
+                  Pro is currently in early access. Tap below to try all features free — no payment needed yet.
                 </div>
               </div>
               <button
@@ -516,7 +544,7 @@ export default function Settings() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 }}
               >
-                <Zap size={15} /> Upgrade to Pro
+                <Zap size={15} /> Try Pro Free
               </button>
             </div>
           )}
@@ -543,9 +571,12 @@ export default function Settings() {
             <span className="about-badge"><WifiOff size={12} /> Works Offline</span>
             <span className="about-badge"><Flag size={12} /> Made in India</span>
           </div>
-          <div style={{ display: 'flex', gap: 16, marginTop: 14, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: 16, marginTop: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link to="/privacy" style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>
               Privacy Policy
+            </Link>
+            <Link to="/terms" style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
+              <ScrollText size={12} /> Terms of Use
             </Link>
             {navigator.share && (
               <button
@@ -559,6 +590,15 @@ export default function Settings() {
         </div>
       </div>
       {showUpgrade && <UpgradePrompt onClose={() => setShowUpgrade(false)} onUpgraded={() => setShowUpgrade(false)} />}
+      <ConfirmDialog
+        open={!!confirm}
+        title={confirm?.title}
+        message={confirm?.message}
+        danger={confirm?.danger}
+        confirmLabel={confirm?.confirmLabel}
+        onConfirm={confirm?.onConfirm}
+        onCancel={() => setConfirm(null)}
+      />
     </div>
   );
 }

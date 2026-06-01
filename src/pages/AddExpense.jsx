@@ -12,6 +12,14 @@ import { useProject } from '../context/ProjectContext';
 
 const VENDOR_COLORS = { labour: '#e17055', material: '#0984e3', service: '#6c5ce7' };
 
+const CAT_PALETTE = [
+  '#e17055', '#0984e3', '#6c5ce7', '#00b894', '#fdcb6e',
+  '#d63031', '#00cec9', '#a29bfe', '#fd79a8', '#e67e22',
+  '#2ecc71', '#3498db', '#9b59b6', '#1abc9c', '#e74c3c',
+];
+let _palIdx = 0;
+const nextCatColor = () => CAT_PALETTE[_palIdx++ % CAT_PALETTE.length];
+
 export default function AddExpense() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -480,7 +488,7 @@ export default function AddExpense() {
                 onClick={async () => {
                   const id = await db.categories.add({
                     name: newCatName.trim(), icon: newCatIcon,
-                    color: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0'),
+                    color: nextCatColor(),
                     isCustom: true,
                   });
                   setCategoryId(id);

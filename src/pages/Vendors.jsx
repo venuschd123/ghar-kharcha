@@ -5,6 +5,7 @@ import { db } from '../db';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { ArrowLeft, Plus, Phone, Trash2, ChevronRight } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const TYPE_META = {
   labour:   { label: 'Labour', color: '#e17055', icon: '👷' },
@@ -79,6 +80,7 @@ export function VendorDetail() {
     () => db.expenses.where('vendorId').equals(vid).toArray(),
     [vid], []
   );
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   if (!vendor || !categories || !projects) return <div className="page-loading">Loading…</div>;
 
@@ -87,18 +89,12 @@ export function VendorDetail() {
   const pending = expenses.filter(e => e.isPending).reduce((s, e) => s + e.amount, 0);
   const sorted = [...expenses].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
 
-  const handleDelete = async () => {
-    if (!window.confirm(`Delete ${vendor.name}? This won't delete their expenses.`)) return;
-    await db.vendors.delete(vid);
-    navigate(-1);
-  };
-
   return (
     <div className="page">
       <header className="page-header">
         <button className="back-btn" onClick={() => navigate(-1)}><ArrowLeft size={20} /></button>
         <span className="page-title" style={{ fontSize: 18 }}>{vendor.name}</span>
-        <button className="delete-btn" onClick={handleDelete}><Trash2 size={17} /></button>
+        <button className="delete-btn" onClick={() => setConfirmDelete(true)}><Trash2 size={17} /></button>
       </header>
 
       <div style={{ padding: '0 var(--px) 16px' }}>
@@ -138,6 +134,16 @@ export function VendorDetail() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title={`Delete ${vendor.name}?`}
+        message="Their payment history will stay, but you won't be able to assign new expenses to this vendor."
+        danger={true}
+        confirmLabel="Delete Vendor"
+        onConfirm={async () => { await db.vendors.delete(vid); navigate(-1); }}
+        onCancel={() => setConfirmDelete(false)}
+      />
 
       <div style={{ padding: '0 var(--px)' }}>
         <div className="section-title" style={{ marginBottom: 10 }}>Payment History</div>

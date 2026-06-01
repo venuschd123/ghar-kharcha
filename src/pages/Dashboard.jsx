@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, useSpring, useReducedMotion } from 'motion/react';
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
 import ProjectSwitcher from '../components/ProjectSwitcher';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const RING_R = 46;
 const CIRC = 2 * Math.PI * RING_R;
@@ -103,6 +105,7 @@ export default function Dashboard() {
   );
   const isDemo = useLiveQuery(() => db.settings.get('isDemo'), [], null);
   const { style: tiltStyle, handlers: tiltHandlers } = useTilt(6);
+  const [confirmExit, setConfirmExit] = useState(false);
 
   if (!activeProject || !categories || !expenses || !phases) {
     return (
@@ -128,8 +131,7 @@ export default function Dashboard() {
     );
   }
 
-  const handleExitDemo = async () => {
-    if (!window.confirm('Exit demo? This will delete all sample data.')) return;
+  const doExitDemo = async () => {
     await Promise.all([db.expenses.clear(), db.vendors.clear(), db.phases.clear(), db.projects.clear(), db.categories.clear()]);
     await Promise.all([db.settings.delete('isDemo'), db.settings.delete('onboardingDone')]);
     window.location.reload();
@@ -183,7 +185,7 @@ export default function Dashboard() {
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Building2 size={14} /> Viewing sample data
           </span>
-          <button onClick={handleExitDemo} className="demo-exit-btn">Start Fresh</button>
+          <button onClick={() => setConfirmExit(true)} className="demo-exit-btn">Start Fresh</button>
         </motion.div>
       )}
 
@@ -380,6 +382,16 @@ export default function Dashboard() {
           </div>
         </section>
       )}
+
+      <ConfirmDialog
+        open={confirmExit}
+        title="Exit Demo Mode?"
+        message="All sample data will be deleted and you'll start fresh with your own project."
+        danger={true}
+        confirmLabel="Start Fresh"
+        onConfirm={doExitDemo}
+        onCancel={() => setConfirmExit(false)}
+      />
 
       {/* Recent */}
       <section className="section" style={{ marginBottom: 24 }}>
