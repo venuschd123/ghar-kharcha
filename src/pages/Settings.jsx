@@ -2,8 +2,12 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
-import { Save, Trash2, Download, Upload, Info, ListChecks, FileText, Sun, Moon, Monitor, Share2 } from 'lucide-react';
+import { Save, Trash2, Download, Upload, Info, ListChecks, FileText, Sun, Moon, Monitor, Share2, Lock, Unlock, Zap } from 'lucide-react';
 import { CURRENCIES, UNITS, setCurrency, setUnit } from '../utils/formatters';
+import { useProject } from '../context/ProjectContext';
+import { usePro } from '../context/ProContext';
+import UpgradePrompt from '../components/UpgradePrompt';
+import { setPin, removePin, isPinEnabled } from '../components/PinLock';
 
 const THEMES = [
   { key: 'light', label: 'Light', Icon: Sun },
@@ -22,15 +26,20 @@ function applyTheme(theme) {
 }
 
 export default function Settings() {
-  const projects = useLiveQuery(() => db.projects.toArray());
+  const { activeProject: project } = useProject();
+  const { isPro, status: proStatus } = usePro();
   const expenseCount = useLiveQuery(() => db.expenses.count(), [], 0);
   const themeSetting = useLiveQuery(() => db.settings.get('theme'));
   const currSetting = useLiveQuery(() => db.settings.get('currency'));
   const unitSetting = useLiveQuery(() => db.settings.get('unit'));
+  const pinHashSetting = useLiveQuery(() => db.settings.get('pin_hash'));
+  const pinEnabled = !!pinHashSetting?.value;
   const currentTheme = themeSetting?.value || 'light';
   const currentCurrency = currSetting?.value || 'INR';
   const currentUnit = unitSetting?.value || 'sqft';
-  const project = projects?.[0];
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [pinMode, setPinMode] = useState(null); // null | 'set' | 'remove'
+  const [newPin, setNewPin] = useState('');
 
   const [localName, setLocalName] = useState(null);
   const [localBudget, setLocalBudget] = useState(null);
@@ -53,6 +62,19 @@ export default function Settings() {
     setLocalSqft(null);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handlePinSave = async () => {
+    if (newPin.length < 4) { alert('PIN must be at least 4 digits'); return; }
+    await setPin(newPin);
+    setNewPin('');
+    setPinMode(null);
+  };
+
+  const handlePinRemove = async () => {
+    if (!window.confirm('Remove PIN lock? Anyone can access the app.')) return;
+    await removePin();
+    setPinMode(null);
   };
 
   const handleExport = async () => {
@@ -296,6 +318,84 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Security */}
+      <div className="settings-card">
+        <div className="settings-card-header">
+          <div className="settings-card-title">Security</div>
+        </div>
+        <div className="settings-card-body">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {pinEnabled ? <Lock size={16} color="var(--accent)" /> : <Unlock size={16} color="var(--text-3)" />}
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>PIN Lock</div>
+                <div style={{ fontSize: 12, color: 'var(--text-2)' }}>{pinEnabled ? 'App is locked on start' : 'No lock set'}</div>
+              </div>
+            </div>
+            <button
+              onClick={() => setPinMode(pinEnabled ? 'remove' : 'set')}
+              style={{ padding: '8px 16px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+              {pinEnabled ? 'Remove' : 'Set PIN'}
+            </button>
+          </div>
+          {pinMode === 'set' && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <input
+                type="password" inputMode="numeric" maxLength={6} placeholder="4–6 digit PIN"
+                className="form-input" value={newPin} onChange={e => setNewPin(e.target.value.replace(/\D/g, ''))}
+                style={{ flex: 1 }} autoFocus
+              />
+              <button onClick={handlePinSave} className="btn btn-primary" style={{ flexShrink: 0 }}>Save</button>
+              <button onClick={() => { setPinMode(null); setNewPin(''); }} style={{ padding: '0 10px', borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-2)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>Cancel</button>
+            </div>
+          )}
+          {pinMode === 'remove' && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button onClick={handlePinRemove} className="btn btn-danger" style={{ flex: 1 }}>Yes, Remove PIN</button>
+              <button onClick={() => setPinMode(null)} style={{ padding: '0 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-2)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>Cancel</button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Pro upgrade */}
+      <div className="settings-card" style={isPro ? { borderColor: 'var(--accent-border)' } : {}}>
+        <div className="settings-card-header">
+          <div className="settings-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Zap size={14} color="var(--accent)" /> Ghar Kharcha Pro
+            {isPro && <span style={{ fontSize: 10, background: 'var(--accent)', color: '#fff', borderRadius: 6, padding: '2px 8px', fontWeight: 700 }}>ACTIVE</span>}
+          </div>
+        </div>
+        <div className="settings-card-body">
+          {isPro ? (
+            <div style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600 }}>
+              ✓ Pro features unlocked: multi-project, Excel export, PIN lock, and more.
+            </div>
+          ) : (
+            <>
+              <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12 }}>
+                Unlock unlimited projects, Excel export, comparison analytics, and more.
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                <div style={{ flex: 1, background: 'var(--accent-dim)', borderRadius: 12, padding: '10px 12px', border: '1px solid var(--accent-border)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase' }}>Annual</div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--accent)' }}>₹499</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-2)' }}>₹42/month</div>
+                </div>
+                <div style={{ flex: 1, background: 'var(--green-dim)', borderRadius: 12, padding: '10px 12px', border: '1px solid rgba(5,150,105,0.2)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--green)', textTransform: 'uppercase' }}>Lifetime</div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--green)' }}>₹999</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-2)' }}>one-time</div>
+                </div>
+              </div>
+              <button className="btn btn-primary btn-full" onClick={() => setShowUpgrade(true)}>
+                <Zap size={14} /> Upgrade to Pro
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* About */}
       <div className="settings-card">
         <div className="settings-card-header">
@@ -329,6 +429,7 @@ export default function Settings() {
           </div>
         </div>
       </div>
+      {showUpgrade && <UpgradePrompt onClose={() => setShowUpgrade(false)} onUpgraded={() => setShowUpgrade(false)} />}
     </div>
   );
 }
