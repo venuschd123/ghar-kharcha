@@ -172,6 +172,7 @@ export default function Dashboard() {
   );
   const isDemo = useLiveQuery(() => db.settings.get('isDemo'), [], null);
   const shareNeeded = useLiveQuery(() => db.settings.get('share_needed'), [], null);
+  const fabHint = useLiveQuery(() => db.settings.get('show_fab_hint'), [], null);
   const { style: tiltStyle, handlers: tiltHandlers } = useTilt(6);
   const [confirmExit, setConfirmExit] = useState(false);
 
@@ -642,6 +643,27 @@ export default function Dashboard() {
         onConfirm={doExitDemo}
         onCancel={() => setConfirmExit(false)}
       />
+
+      {/* FAB hint — shown once after onboarding on a fresh project */}
+      {fabHint?.value === 'true' && isFreshProject && (
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ delay: 0.8, duration: 0.4, ease: [0.16,1,0.3,1] }}
+          style={{
+            position: 'fixed', bottom: 'calc(var(--nav-h) + 16px + env(safe-area-inset-bottom,0px))',
+            left: '50%', transform: 'translateX(-50%)',
+            background: 'var(--text)', color: 'var(--bg)', borderRadius: 24,
+            padding: '10px 20px', fontSize: 13, fontWeight: 700,
+            display: 'flex', alignItems: 'center', gap: 8,
+            boxShadow: '0 8px 24px rgba(0,0,0,.3)', zIndex: 900,
+            whiteSpace: 'nowrap', cursor: 'pointer',
+          }}
+          onClick={() => db.settings.delete('show_fab_hint')}
+        >
+          <Plus size={14} /> Tap + to log your first expense ↓
+        </motion.div>
+      )}
 
       {/* Recent */}
       <section className="section" style={{ marginBottom: 24 }}>

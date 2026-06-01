@@ -164,6 +164,8 @@ export default function AddExpense() {
         await db.expenses.add(data);
         // Viral hook: show share prompt after 10th expense (once per install)
         const total = await db.expenses.count();
+        // Clear FAB hint once first expense is added
+        await db.settings.delete('show_fab_hint');
         if (total === 10) {
           const prompted = await db.settings.get('share_prompted');
           if (!prompted?.value) await db.settings.put({ key: 'share_needed', value: 'true' });

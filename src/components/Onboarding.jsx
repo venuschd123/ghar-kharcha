@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Building2, HardHat, ArrowRight, Eye } from 'lucide-react';
+import { Building2, HardHat, ArrowRight, Eye, ReceiptText, Users, BarChart2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, DEFAULT_CATEGORIES, DEFAULT_PHASES, seedDemoData } from '../db';
 
@@ -24,6 +24,13 @@ const fadeUp = {
   hidden: { opacity: 0, y: 16 },
   show:   { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16,1,0.3,1] } },
 };
+
+// Slide 2: Feature tour cards
+const FEATURES = [
+  { icon: ReceiptText, color: '#10B981', bg: 'rgba(16,185,129,.12)', title: 'Track Expenses', desc: 'Log labour, materials and contractor payments instantly' },
+  { icon: Users,       color: '#3B82F6', bg: 'rgba(59,130,246,.12)',  title: 'Manage Vendors', desc: 'Keep contractor contacts and payment history in one place' },
+  { icon: BarChart2,   color: '#F59E0B', bg: 'rgba(245,158,11,.12)',  title: 'See Reports',    desc: 'Category breakdowns, budget status and PDF exports' },
+];
 
 export default function Onboarding({ onDone }) {
   const [slide, setSlide] = useState(0);
@@ -64,6 +71,8 @@ export default function Onboarding({ onDone }) {
         });
       }
       await db.settings.put({ key: 'onboardingDone', value: 'true' });
+      // Trigger FAB hint on first dashboard visit
+      await db.settings.put({ key: 'show_fab_hint', value: 'true' });
       onDone();
     } catch { setSaving(false); }
   };
@@ -72,7 +81,8 @@ export default function Onboarding({ onDone }) {
     <div className="onboarding">
       <div className="onboarding-body" style={{ overflow: 'hidden' }}>
         <AnimatePresence mode="wait" initial={false}>
-          {slide === 0 ? (
+          {/* ── Slide 0: Welcome ── */}
+          {slide === 0 && (
             <motion.div
               key="slide0"
               className="ob-slide active"
@@ -86,9 +96,17 @@ export default function Onboarding({ onDone }) {
                 <motion.div variants={fadeUp} className="ob-icon-wrap">
                   <Building2 size={40} strokeWidth={1.5} />
                 </motion.div>
-                <motion.h1 variants={fadeUp} className="ob-title">{"Welcome to\nGhar Kharcha"}</motion.h1>
-                <motion.p variants={fadeUp} className="ob-desc">
-                  Track every rupee of your home construction. Per payment, per contractor, per phase. 100% offline and private.
+                <motion.div variants={fadeUp}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 8, textAlign: 'center' }}>
+                    Home Construction Tracker
+                  </div>
+                  <h1 className="ob-title">{"Every rupee\nmatters."}</h1>
+                  <div style={{ textAlign: 'center', marginTop: 4, fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,.55)', letterSpacing: '-.2px' }}>
+                    Track it all.
+                  </div>
+                </motion.div>
+                <motion.p variants={fadeUp} className="ob-desc" style={{ marginTop: 4 }}>
+                  Labour • Materials • Contractors • Phases — all offline, all private.
                 </motion.p>
               </motion.div>
 
@@ -102,18 +120,93 @@ export default function Onboarding({ onDone }) {
                   </button>
                   <button className="ob-demo-btn" onClick={handleDemo} disabled={loadingDemo}>
                     <Eye size={16} />
-                    {loadingDemo ? 'Loading demo...' : 'View a sample project first'}
+                    {loadingDemo ? 'Loading demo...' : 'See a live example →'}
                   </button>
                 </motion.div>
                 <div className="ob-dots">
                   <div className="ob-dot active" />
                   <div className="ob-dot" />
+                  <div className="ob-dot" />
                 </div>
               </div>
             </motion.div>
-          ) : (
+          )}
+
+          {/* ── Slide 1: Feature Tour ── */}
+          {slide === 1 && (
             <motion.div
               key="slide1"
+              className="ob-slide active"
+              variants={slideVariants}
+              initial="enter" animate="center" exit="exit"
+            >
+              {/* Skip */}
+              <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
+                <button
+                  onClick={() => setSlide(2)}
+                  style={{ background: 'rgba(255,255,255,.1)', border: 'none', borderRadius: 20, padding: '6px 12px', color: 'rgba(255,255,255,.6)', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'inherit' }}
+                >
+                  Skip <X size={11} />
+                </button>
+              </div>
+
+              <motion.div
+                className="ob-hero" style={{ justifyContent: 'center', paddingTop: 60 }}
+                variants={stagger} initial="hidden" animate="show"
+              >
+                <motion.h1 variants={fadeUp} className="ob-title" style={{ fontSize: 26 }}>
+                  {"Everything you need\nto build smarter."}
+                </motion.h1>
+              </motion.div>
+
+              <div style={{ padding: '0 var(--px) 20px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1, justifyContent: 'center' }}>
+                {FEATURES.map((f, i) => (
+                  <motion.div
+                    key={f.title}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 + i * 0.1, duration: 0.4, ease: [0.16,1,0.3,1] }}
+                    style={{
+                      background: 'rgba(255,255,255,.07)',
+                      border: '1px solid rgba(255,255,255,.1)',
+                      borderRadius: 16, padding: '14px 16px',
+                      display: 'flex', alignItems: 'center', gap: 14,
+                    }}
+                  >
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: f.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <f.icon size={20} color={f.color} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 3 }}>{f.title}</div>
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,.5)', lineHeight: 1.5 }}>{f.desc}</div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="ob-footer">
+                <div className="ob-dots">
+                  <div className="ob-dot" />
+                  <div className="ob-dot active" />
+                  <div className="ob-dot" />
+                </div>
+                <motion.button
+                  className="ob-btn-primary"
+                  style={{ width: '100%', maxWidth: 380 }}
+                  onClick={() => setSlide(2)}
+                  initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  Set Up My Project <ArrowRight size={18} />
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── Slide 2: Project Setup ── */}
+          {slide === 2 && (
+            <motion.div
+              key="slide2"
               className="ob-slide active"
               variants={slideVariants}
               initial="enter" animate="center" exit="exit"
@@ -184,6 +277,7 @@ export default function Onboarding({ onDone }) {
               <div className="ob-footer">
                 <div className="ob-dots">
                   <div className="ob-dot" />
+                  <div className="ob-dot" />
                   <div className="ob-dot active" />
                 </div>
                 <motion.button
@@ -196,7 +290,7 @@ export default function Onboarding({ onDone }) {
                   {saving ? 'Setting up...' : 'Start Tracking'}
                   {!saving && <ArrowRight size={18} />}
                 </motion.button>
-                <button className="ob-btn-ghost" onClick={() => setSlide(0)}>Back</button>
+                <button className="ob-btn-ghost" onClick={() => setSlide(1)}>Back</button>
               </div>
             </motion.div>
           )}
