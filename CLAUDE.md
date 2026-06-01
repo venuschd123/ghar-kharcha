@@ -99,11 +99,19 @@ All fixes live at the bottom of `src/index.css` under "DESIGN AUDIT FIXES":
 - `/terms` — Terms of Use (12 sections: nature of app, data storage, OCR/photos, Pro features, no-warranty, liability, governing law India)
 - Both linked from Settings → About section
 
+## Features Added (June 2026)
+- **Vendor editing**: pencil button in VendorDetail header → EditVendorSheet (name/phone/type pre-filled)
+- **Expenses search**: vendor name now included in search (note, category, vendor, amount)
+- **Report MoM%**: always shown regardless of budget or period; calculated from all paid expenses
+- **Report Excel**: auto-triggers download immediately after Pro upgrade via UpgradePrompt
+- **Excel import fix**: `XLSX = xlsxModule.default ?? xlsxModule` guards CJS/ESM interop
+- **Phase editing**: + button to add, pencil to edit (name/emoji picker), trash to delete
+- **Category management**: Settings has "Categories" card with edit (name/emoji/color palette) + delete (reassigns to Misc) + add custom category
+
 ## Remaining / Known Issues
 - The `transition:width` on `.cat-bar-fill` (index.css line 409) is a dead CSS rule (framer handles it) — harmless but should be cleaned
-- Vendor edit (name/phone/type) not yet implemented — only add/delete
-- Report "vs Last Month" % only shows when budget is set AND period === 'all' — should show for any period
-- No search by vendor name in Expenses list
+- Deleting a phase leaves `phaseId` FK dangling on any expenses that referenced it (low priority — expenses display fine since phaseId is optional)
+- App name "Ghar Kharcha" is confirmed correct and culturally appropriate for Indian market — no change needed
 
 ## Monetization / Future
 - Google Play via TWA (Bubblewrap) — pending
