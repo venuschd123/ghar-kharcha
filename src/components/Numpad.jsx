@@ -26,13 +26,14 @@ export default function Numpad({ value, onChange }) {
             key={key}
             className={`numpad-key-v2${isAction ? ' action' : ''}${isDelete ? ' delete-key' : ''}`}
             onPointerDown={e => { e.preventDefault(); handle(key); }}
+            style={{ transformPerspective: 500, transformOrigin: 'center 80%' }}
             whileTap={{
-              scale: 0.90,
-              y: 1,
-              boxShadow: '0 0px 0 var(--border-mid)',
-              transition: { type: 'spring', stiffness: 600, damping: 25 },
+              scale: 0.88,
+              rotateX: 12,
+              y: 3,
+              transition: { type: 'spring', stiffness: 600, damping: 22 },
             }}
-            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 28 }}
           >
             {isDelete ? <Delete size={21} strokeWidth={2} /> : key}
           </motion.button>

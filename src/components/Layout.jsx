@@ -6,9 +6,9 @@ import ErrorBoundary from './ErrorBoundary';
 import InstallPrompt from './InstallPrompt';
 
 const pageVariants = {
-  initial: { opacity: 0, y: 6 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] } },
-  exit:    { opacity: 0, y: -4, transition: { duration: 0.12, ease: 'easeIn' } },
+  initial: { opacity: 0, y: 10, scale: 0.985 },
+  animate: { opacity: 1, y: 0,  scale: 1,     transition: { duration: 0.22, ease: [0.16, 1, 0.3, 1] } },
+  exit:    { opacity: 0, y: -6, scale: 0.98,  transition: { duration: 0.13, ease: 'easeIn' } },
 };
 
 function AnimatedOutlet() {
@@ -65,9 +65,14 @@ export default function Layout() {
           <span>Expenses</span>
         </NavLink>
         <div className="nav-fab-wrap">
-          <NavLink to="/add" className={({ isActive }) => `nav-fab${isActive ? ' active-route' : ''}`}>
-            <Plus size={26} strokeWidth={2.5} />
-          </NavLink>
+          <motion.div
+            whileTap={{ scale: 0.86, rotate: 45 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+          >
+            <NavLink to="/add" className={({ isActive }) => `nav-fab${isActive ? ' active-route' : ''}`}>
+              <Plus size={26} strokeWidth={2.5} />
+            </NavLink>
+          </motion.div>
         </div>
         <NavLink to="/report" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
           <PieChart size={21} strokeWidth={2} />

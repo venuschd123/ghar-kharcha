@@ -1326,3 +1326,115 @@ select.form-input {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   color-scheme: dark;
 }
+
+/* ═══════════════════════════════════════════════════════
+   WOW UPGRADE — 3D · GLASS · DEPTH
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Token refresh: more opaque for pill nav ─────────── */
+:root  { --nav-bg: rgba(255,255,255,.92); --nav-h: 62px; }
+[data-theme="dark"] { --nav-bg: rgba(8,14,26,.87); }
+
+/* ── Floating glassmorphic pill nav ──────────────────── */
+.app-main {
+  padding-bottom: calc(var(--nav-h) + 34px + env(safe-area-inset-bottom,0px));
+}
+
+.bottom-nav {
+  bottom: calc(10px + env(safe-area-inset-bottom,0px));
+  left: 50%; right: auto;
+  transform: translateX(-50%);
+  width: calc(100% - 24px); max-width: 440px;
+  height: var(--nav-h);
+  padding: 0 4px;
+  padding-bottom: 0;
+  border-top: none;
+  border: 1px solid var(--border-mid);
+  border-radius: 31px;
+  box-shadow:
+    0 12px 40px rgba(0,0,0,.20),
+    0 4px 12px rgba(0,0,0,.10),
+    inset 0 1px 0 rgba(255,255,255,.14);
+}
+
+/* Active indicator: radial glow inside pill (no bottom bar) */
+.nav-item.active::after { display: none; }
+.nav-item { position: relative; isolation: isolate; }
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  inset: -8px -14px;
+  background: radial-gradient(ellipse at 50% 60%, var(--accent-dim) 0%, transparent 65%);
+  border-radius: 24px;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ── FAB: larger ring glow ───────────────────────────── */
+.nav-fab {
+  box-shadow:
+    0 0 0 7px var(--accent-dim),
+    0 6px 20px var(--accent-glow);
+}
+.nav-fab:active {
+  box-shadow:
+    0 0 0 4px var(--accent-dim),
+    0 2px 8px var(--accent-glow);
+}
+
+/* ── Hero card: edge highlight + border depth ────────── */
+.hero-card {
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow:
+    0 24px 48px rgba(0,0,0,.45),
+    0 8px 16px rgba(0,0,0,.25),
+    inset 0 1px 0 rgba(255,255,255,.12);
+}
+.hero-ring {
+  filter:
+    drop-shadow(0 0 14px rgba(16,185,129,.55))
+    drop-shadow(0 0 40px rgba(16,185,129,.18));
+}
+
+/* ── Numpad: deeper 3D tactile shadow ────────────────── */
+.numpad-key-v2 {
+  box-shadow:
+    0 4px 0 rgba(15,23,42,.14),
+    0 5px 12px rgba(0,0,0,.08),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+[data-theme="dark"] .numpad-key-v2 {
+  background: #1A2542;
+  box-shadow:
+    0 4px 0 rgba(0,0,0,.5),
+    0 5px 14px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.05);
+}
+[data-theme="dark"] .numpad-key-v2.action { background: #111C35; }
+.numpad-key-v2:active {
+  box-shadow: 0 0 0 rgba(0,0,0,0) !important;
+  background: var(--surface-2);
+}
+
+/* ── Stat cards: 3D perspective hover ────────────────── */
+.stat-card:hover {
+  transform: translateY(-5px) perspective(500px) rotateX(-4deg);
+  box-shadow: var(--shadow-lg), 0 0 22px var(--accent-dim);
+}
+
+/* ── Insight chips: slight lift ─────────────────────── */
+.insight-chip:hover {
+  transform: translateY(-3px) perspective(500px) rotateX(-2deg);
+  box-shadow: var(--shadow-md), 0 0 14px var(--accent-dim);
+}
+
+/* ── Toast: raise above floating nav ────────────────── */
+.toast-bar {
+  bottom: calc(var(--nav-h) + 30px + env(safe-area-inset-bottom,0px));
+}
+
+/* ── Page entry: 3D perspective scale in ────────────── */
+@keyframes page-in-3d {
+  from { opacity: 0; transform: perspective(800px) translateY(12px) rotateX(3deg) scale(.98); }
+  to   { opacity: 1; transform: perspective(800px) translateY(0)  rotateX(0deg) scale(1); }
+}

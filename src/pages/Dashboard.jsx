@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, useMotionValue, useTransform, useSpring, useReducedMotion } from 'motion/react';
 import { db } from '../db';
 import { formatCurrency, formatCompact, formatDateLabel, groupByCategory, getToday, getDaysAgo } from '../utils/formatters';
 import {
@@ -12,6 +12,32 @@ import ProjectSwitcher from '../components/ProjectSwitcher';
 
 const RING_R = 46;
 const CIRC = 2 * Math.PI * RING_R;
+
+function useTilt(strength = 6) {
+  const prefersReduced = useReducedMotion();
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotX = useTransform(y, [-80, 80], [strength, -strength]);
+  const rotY = useTransform(x, [-80, 80], [-strength, strength]);
+  const springRotX = useSpring(rotX, { stiffness: 180, damping: 18 });
+  const springRotY = useSpring(rotY, { stiffness: 180, damping: 18 });
+  return {
+    style: prefersReduced ? {} : {
+      rotateX: springRotX, rotateY: springRotY,
+      transformPerspective: 900, transformStyle: 'preserve-3d',
+    },
+    handlers: {
+      onPointerMove(e) {
+        if (prefersReduced) return;
+        const r = e.currentTarget.getBoundingClientRect();
+        x.set(e.clientX - r.left - r.width / 2);
+        y.set(e.clientY - r.top - r.height / 2);
+      },
+      onPointerLeave() { x.set(0); y.set(0); },
+      onPointerUp()    { x.set(0); y.set(0); },
+    },
+  };
+}
 
 // Stagger container/child variants
 const listVariants = {
@@ -26,8 +52,26 @@ const itemVariants = {
 function BudgetRing({ pct, color }) {
   const offset = CIRC * (1 - Math.min(pct, 100) / 100);
   return (
-    <svg width="120" height="120" viewBox="0 0 120 120">
+    <svg width="120" height="120" viewBox="0 0 120 120" overflow="visible">
+      {/* Outer pulse ring */}
+      <motion.circle
+        cx="60" cy="60" r={RING_R + 11}
+        fill="none" stroke={color} strokeWidth="2"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 0.35, 0] }}
+        transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut', delay: 1.4 }}
+      />
+      {/* Second pulse — offset timing */}
+      <motion.circle
+        cx="60" cy="60" r={RING_R + 20}
+        fill="none" stroke={color} strokeWidth="1"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 0.15, 0] }}
+        transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut', delay: 2.2 }}
+      />
+      {/* Track */}
       <circle cx="60" cy="60" r={RING_R} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="10" />
+      {/* Fill */}
       <motion.circle
         cx="60" cy="60" r={RING_R} fill="none"
         stroke={color} strokeWidth="10"
@@ -58,6 +102,7 @@ export default function Dashboard() {
     [activeProject?.id], []
   );
   const isDemo = useLiveQuery(() => db.settings.get('isDemo'), [], null);
+  const { style: tiltStyle, handlers: tiltHandlers } = useTilt(6);
 
   if (!activeProject || !categories || !expenses || !phases) {
     return (
@@ -158,7 +203,7 @@ export default function Dashboard() {
       {/* Hero card */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: [0.16,1,0.3,1] }}>
         {budget > 0 ? (
-          <div className="hero-card">
+          <motion.div className="hero-card" style={tiltStyle} {...tiltHandlers}>
             <div className="hero-ring">
               <BudgetRing pct={pct} color={ringColor} />
               <div className="hero-ring-center">
@@ -188,7 +233,7 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
-          </div>
+          </motion.div>
         ) : (
           <div className="hero-card-simple">
             <div className="hero-eyebrow">Total Spent</div>
@@ -204,6 +249,7 @@ export default function Dashboard() {
           </div>
         )}
       </motion.div>
+
 
       {/* Phase progress */}
       {phases.length > 0 && (
