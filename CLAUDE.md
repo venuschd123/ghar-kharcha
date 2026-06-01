@@ -33,6 +33,11 @@ git push             # SSH key ~/.ssh/github_ghar_kharcha auto-used
 - **Hero cards** use deep navy gradient `#0F172A → #1a2744` with radial mesh glows
 - CSS tokens in `src/index.css` `:root` and `[data-theme="dark"]` blocks
 
+## Key Components Added
+- `src/components/ConfirmDialog.jsx` — reusable in-app confirmation bottom-sheet (replaces all window.confirm/alert)
+  - Props: open, title, message, danger, confirmLabel, cancelLabel, onConfirm, onCancel, icon
+  - Used in: Dashboard, Settings, Vendors
+
 ## File Structure
 ```
 src/
@@ -89,11 +94,16 @@ All fixes live at the bottom of `src/index.css` under "DESIGN AUDIT FIXES":
 | Date group headers | Sticky, `font-size:13px`, `font-weight:800`, no uppercase |
 | Stat icons | `background: var(--surface)` |
 
+## Legal Pages
+- `/privacy` — Privacy Policy (6 highlight cards + 7 detail sections)
+- `/terms` — Terms of Use (12 sections: nature of app, data storage, OCR/photos, Pro features, no-warranty, liability, governing law India)
+- Both linked from Settings → About section
+
 ## Remaining / Known Issues
-- `data-info` class used in Settings.jsx line 404 has no CSS rule (layout works via browser defaults but unstyled)
-- `select` element in Settings (Currency) has no custom dark-mode styling — uses browser default appearance
-- `form-input` select needs `-webkit-appearance: none` + custom caret for cross-browser consistency
 - The `transition:width` on `.cat-bar-fill` (index.css line 409) is a dead CSS rule (framer handles it) — harmless but should be cleaned
+- Vendor edit (name/phone/type) not yet implemented — only add/delete
+- Report "vs Last Month" % only shows when budget is set AND period === 'all' — should show for any period
+- No search by vendor name in Expenses list
 
 ## Monetization / Future
 - Google Play via TWA (Bubblewrap) — pending
