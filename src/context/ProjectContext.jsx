@@ -4,18 +4,22 @@ import { db } from '../db';
 
 const ProjectContext = createContext(null);
 
+/** Free tier: 1 project. Pro: unlimited. */
+export const FREE_PROJECT_LIMIT = 1;
+
 export function ProjectProvider({ children }) {
   const projects = useLiveQuery(() => db.projects.orderBy('createdAt').toArray(), [], []);
+  const proSetting = useLiveQuery(() => db.settings.get('pro_status'));
+  const isPro = proSetting?.value === 'pro' || proSetting?.value === 'trial';
+
   const [activeProjectId, setActiveProjectId] = useState(null);
 
-  // Load saved active project from settings
   useEffect(() => {
     db.settings.get('activeProjectId').then(s => {
       if (s?.value) setActiveProjectId(Number(s.value));
     });
   }, []);
 
-  // Auto-select first project if none selected
   useEffect(() => {
     if (projects && projects.length > 0 && !activeProjectId) {
       setActiveProjectId(projects[0].id);
@@ -23,6 +27,7 @@ export function ProjectProvider({ children }) {
   }, [projects, activeProjectId]);
 
   const activeProject = projects?.find(p => p.id === activeProjectId) || projects?.[0] || null;
+  const canCreateProject = isPro || (projects?.length ?? 0) < FREE_PROJECT_LIMIT;
 
   const switchProject = async (id) => {
     setActiveProjectId(id);
@@ -30,11 +35,13 @@ export function ProjectProvider({ children }) {
   };
 
   const createProject = async (name, budget = 0, sqft = 0) => {
+    if (!canCreateProject) {
+      throw new Error('UPGRADE_REQUIRED');
+    }
     const id = await db.projects.add({
       name, budget, sqft,
       createdAt: new Date().toISOString(),
     });
-    // Seed default phases for new project
     const { DEFAULT_PHASES } = await import('../db');
     await db.phases.bulkAdd(DEFAULT_PHASES.map(p => ({ ...p, projectId: id })));
     await switchProject(id);
@@ -42,7 +49,15 @@ export function ProjectProvider({ children }) {
   };
 
   return (
-    <ProjectContext.Provider value={{ projects: projects || [], activeProject, activeProjectId, switchProject, createProject }}>
+    <ProjectContext.Provider value={{
+      projects: projects || [],
+      activeProject,
+      activeProjectId,
+      isPro,
+      canCreateProject,
+      switchProject,
+      createProject,
+    }}>
       {children}
     </ProjectContext.Provider>
   );

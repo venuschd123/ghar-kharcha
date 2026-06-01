@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
+import { Building2 } from 'lucide-react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -59,8 +60,9 @@ function App() {
   if (!ready) {
     return (
       <div className="app-splash">
-        <div className="splash-icon">🏠</div>
+        <div className="splash-icon"><Building2 size={52} strokeWidth={1.5} /></div>
         <div className="splash-wordmark">Ghar Kharcha</div>
+        <div className="splash-sub">Construction Cost Tracker</div>
         <div className="splash-spinner" />
       </div>
     );

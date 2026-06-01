@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Home, PlusCircle, Users, ListChecks, Settings, WifiOff } from 'lucide-react';
+import { LayoutDashboard, Plus, Users, ListChecks, Settings, WifiOff, BarChart2 } from 'lucide-react';
 import InstallPrompt from './InstallPrompt';
 
 export default function Layout() {
@@ -18,7 +18,7 @@ export default function Layout() {
     <div className="app-layout">
       {offline && (
         <div className="offline-banner">
-          <WifiOff size={13} /> Offline — your data is saved locally
+          <WifiOff size={13} /> Offline - your data is saved locally
         </div>
       )}
       <main className="app-main">
@@ -26,24 +26,24 @@ export default function Layout() {
       </main>
       <nav className="bottom-nav">
         <NavLink to="/" end className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
-          <Home size={22} />
+          <LayoutDashboard size={21} strokeWidth={isActive => isActive ? 2.5 : 2} />
           <span>Home</span>
         </NavLink>
-        <NavLink to="/vendors" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
-          <Users size={22} />
-          <span>Vendors</span>
+        <NavLink to="/expenses" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+          <BarChart2 size={21} strokeWidth={2} />
+          <span>Expenses</span>
         </NavLink>
         <div className="nav-fab-wrap">
           <NavLink to="/add" className={({ isActive }) => `nav-fab${isActive ? ' active-route' : ''}`}>
-            <PlusCircle size={28} strokeWidth={2.5} />
+            <Plus size={26} strokeWidth={2.5} />
           </NavLink>
         </div>
-        <NavLink to="/phases" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
-          <ListChecks size={22} />
-          <span>Phases</span>
+        <NavLink to="/vendors" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
+          <Users size={21} strokeWidth={2} />
+          <span>Vendors</span>
         </NavLink>
         <NavLink to="/settings" className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
-          <Settings size={22} />
+          <Settings size={21} strokeWidth={2} />
           <span>Settings</span>
         </NavLink>
       </nav>

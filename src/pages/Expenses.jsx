@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
 import { formatCurrency, formatDate, formatDateLabel, groupByDate } from '../utils/formatters';
-import { Check } from 'lucide-react';
+import { Check, Search, Receipt } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
 
 export default function Expenses() {
@@ -94,7 +94,9 @@ export default function Expenses() {
       {/* Grouped list */}
       {grouped.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">🔍</div>
+          <div className="empty-icon">
+            {search || filterCat ? <Search size={24} /> : <Receipt size={24} />}
+          </div>
           <h3>{search || filterCat ? 'No results' : 'No expenses yet'}</h3>
           <p>{search || filterCat ? 'Try a different search or filter.' : 'Add your first expense using the + button.'}</p>
         </div>
@@ -122,7 +124,7 @@ export default function Expenses() {
                             {exp.isPending && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: 'var(--gold)', background: 'var(--gold-dim)', padding: '1px 6px', borderRadius: 4 }}>PENDING</span>}
                           </div>
                           <div className="expense-note">
-                            {exp.photo && <span style={{ marginRight: 4 }}>📎</span>}
+                            {exp.photo && <span style={{ marginRight: 4, fontSize: 11, color: 'var(--accent)' }}>+photo</span>}
                             {exp.note || formatDate(exp.date)}
                           </div>
                         </div>
