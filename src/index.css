@@ -1122,3 +1122,90 @@ img { display:block; max-width:100%; }
 }
 .note-input:focus { border-color:var(--accent-border); box-shadow:0 0 0 3px var(--accent-dim); }
 .note-input::placeholder { color:var(--text-3); }
+
+/* ═══════════════════════════════════════════════════════
+   ABOUT SECTION
+   ═══════════════════════════════════════════════════════ */
+.about-body { align-items:center; text-align:center; padding:20px 16px; }
+.about-logo-wrap {
+  width:60px; height:60px; border-radius:var(--r-xl);
+  background:var(--accent-dim); border:1px solid var(--accent-border);
+  display:flex; align-items:center; justify-content:center; margin-bottom:10px;
+}
+.about-title { font-size:17px; font-weight:800; letter-spacing:-.3px; margin-bottom:3px; }
+.about-ver { font-size:12px; color:var(--text-3); font-weight:600; margin-bottom:10px; }
+.about-desc { font-size:13px; color:var(--text-2); line-height:1.6; max-width:280px; margin-bottom:12px; }
+.about-badges { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+.about-badge {
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:11px; font-weight:700; color:var(--text-2);
+  background:var(--surface); border:1px solid var(--border);
+  padding:5px 10px; border-radius:var(--r-pill);
+}
+.about-badge svg { color:var(--accent); }
+
+/* ═══════════════════════════════════════════════════════
+   CAT-CARD COLOR REFINEMENTS
+   ═══════════════════════════════════════════════════════ */
+.cat-card { position:relative; }
+.cat-card::after {
+  content:''; position:absolute; inset:0; border-radius:var(--r-lg);
+  background:linear-gradient(160deg, rgba(255,255,255,.06) 0%, transparent 60%);
+  pointer-events:none;
+}
+.cat-card.active::after { display:none; }
+.cat-card-icon-wrap {
+  transition:all var(--dur-fast) var(--ease-out);
+}
+.cat-card:hover .cat-card-icon-wrap { transform:scale(1.08); }
+.cat-card.active .cat-card-icon-wrap { transform:scale(1.05); }
+
+/* ═══════════════════════════════════════════════════════
+   NUMPAD VISUAL REFINEMENTS
+   ═══════════════════════════════════════════════════════ */
+.numpad-v2 {
+  /* Override gap for better tactile spacing */
+  gap:10px;
+}
+.numpad-key-v2 {
+  /* Lighter bg in dark mode for contrast */
+  font-variant-numeric:tabular-nums;
+}
+[data-theme="dark"] .numpad-key-v2 {
+  background:#1C2840;
+  border-color:rgba(255,255,255,.1);
+  box-shadow:0 2px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.4);
+}
+[data-theme="dark"] .numpad-key-v2.action {
+  background:#141E2F;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DASHBOARD REFINEMENTS
+   ═══════════════════════════════════════════════════════ */
+/* Ensure category bar icons look clean */
+.cat-bar-icon { line-height:1; }
+
+/* Phase progress card icon enhancement */
+.phase-icon-ring {
+  width:40px; height:40px; border-radius:50%;
+  background:rgba(16,185,129,.12); border:1.5px solid rgba(16,185,129,.25);
+  display:flex; align-items:center; justify-content:center;
+  color:var(--accent); flex-shrink:0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   REPORT CHART TOOLTIP REFINEMENT
+   ═══════════════════════════════════════════════════════ */
+.recharts-tooltip-wrapper { outline:none !important; }
+
+/* ═══════════════════════════════════════════════════════
+   VENDOR ROW IMPROVEMENTS
+   ═══════════════════════════════════════════════════════ */
+.vendor-row { background:var(--bg); }
+.pending-toggle {
+  min-height:44px; flex-shrink:0; padding:0 14px; gap:7px;
+  border-radius:var(--r); font-size:13px; font-weight:700;
+  font-family:inherit; color:var(--text-2);
+}
+.pending-toggle.active { color:var(--gold); }

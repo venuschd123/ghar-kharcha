@@ -271,9 +271,17 @@ export default function AddExpense() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.02, duration: 0.22, ease: [0.16,1,0.3,1] }}
-              whileTap={{ scale: 0.93 }}
+              whileTap={{ scale: 0.92 }}
+              whileHover={{ y: -3, transition: { duration: 0.15 } }}
+              style={categoryId === cat.id ? { boxShadow: `0 0 0 2px ${cat.color}55, 0 4px 12px ${cat.color}22` } : {}}
             >
-              <div className="cat-card-icon-wrap">{cat.icon}</div>
+              <div
+                className="cat-card-icon-wrap"
+                style={{
+                  background: categoryId === cat.id ? cat.color : cat.color + '20',
+                  boxShadow: `0 2px 8px ${cat.color}30`,
+                }}
+              >{cat.icon}</div>
               <span className="cat-card-label">{cat.name.split(' ')[0]}</span>
             </motion.button>
           ))}

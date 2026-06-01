@@ -189,12 +189,8 @@ export default function Dashboard() {
       {phases.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <Link to="/phases" className="phase-progress-card">
-            <div style={{
-              width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-              background: activePhase ? 'rgba(16,185,129,.12)' : 'var(--surface)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: activePhase ? 'var(--green)' : 'var(--text-3)',
-            }}>
+            <div className="phase-icon-ring"
+              style={!activePhase && donePhases !== phases.length ? { background: 'var(--surface)', border: '1.5px solid var(--border)', color: 'var(--text-3)' } : {}}>
               {donePhases === phases.length ? <CheckCircle2 size={20} /> : activePhase ? <HardHat size={20} /> : <Clock size={20} />}
             </div>
             <div style={{ flex: 1 }}>

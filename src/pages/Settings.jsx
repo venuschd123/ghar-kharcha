@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
-import { Save, Trash2, Download, Upload, Info, ListChecks, FileText, Sun, Moon, Monitor, Share2, Lock, Unlock, Zap, Target } from 'lucide-react';
+import { Save, Trash2, Download, Upload, Info, ListChecks, FileText, Sun, Moon, Monitor, Share2, Lock, Unlock, Zap, Target, Building2, ShieldCheck, WifiOff, Flag } from 'lucide-react';
 import { CURRENCIES, UNITS, setCurrency, setUnit } from '../utils/formatters';
 import { useProject } from '../context/ProjectContext';
 import { usePro } from '../context/ProContext';
@@ -502,7 +502,9 @@ export default function Settings() {
           <div className="settings-card-title">About</div>
         </div>
         <div className="settings-card-body about-body">
-          <div className="about-logo">🏠</div>
+          <div className="about-logo-wrap">
+            <Building2 size={28} strokeWidth={1.5} color="var(--accent)" />
+          </div>
           <div className="about-title">Ghar Kharcha</div>
           <div className="about-ver">Version 1.0.0</div>
           <div className="about-desc">
@@ -510,11 +512,11 @@ export default function Settings() {
             100% offline — your data never leaves your device.
           </div>
           <div className="about-badges">
-            <span className="badge">🔒 Privacy First</span>
-            <span className="badge">📴 Works Offline</span>
-            <span className="badge">🇮🇳 Made in India</span>
+            <span className="about-badge"><ShieldCheck size={12} /> Privacy First</span>
+            <span className="about-badge"><WifiOff size={12} /> Works Offline</span>
+            <span className="about-badge"><Flag size={12} /> Made in India</span>
           </div>
-          <div style={{ display: 'flex', gap: 10, marginTop: 12, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: 16, marginTop: 14, justifyContent: 'center' }}>
             <Link to="/privacy" style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>
               Privacy Policy
             </Link>
