@@ -117,12 +117,19 @@ export default function Report() {
       return { label, amount };
     });
 
-  // Month-over-month change
+  // Month-over-month change — always calculated from ALL paid expenses so
+  // the stat shows regardless of the selected period filter or budget setting.
+  const allPaidByMonth = {};
+  expenses.filter(e => !e.isPending).forEach(e => {
+    const key = e.date.slice(0, 7); // "YYYY-MM"
+    allPaidByMonth[key] = (allPaidByMonth[key] || 0) + e.amount;
+  });
+  const allMonthlyEntries = Object.entries(allPaidByMonth).sort(([a], [b]) => a.localeCompare(b));
   let momChange = null;
-  if (monthlyData.length >= 2) {
-    const last = monthlyData[monthlyData.length - 1].amount;
-    const prev = monthlyData[monthlyData.length - 2].amount;
-    if (prev > 0) momChange = Math.round(((last - prev) / prev) * 100);
+  if (allMonthlyEntries.length >= 2) {
+    const lastAmt = allMonthlyEntries[allMonthlyEntries.length - 1][1];
+    const prevAmt = allMonthlyEntries[allMonthlyEntries.length - 2][1];
+    if (prevAmt > 0) momChange = Math.round(((lastAmt - prevAmt) / prevAmt) * 100);
   }
 
   // Category chart data
@@ -144,8 +151,7 @@ export default function Report() {
     }
   };
 
-  const handleExportExcel = async () => {
-    if (!isPro) { setUpgradeFeature(PRO_FEATURES.EXCEL_EXPORT); setShowUpgrade(true); return; }
+  const doExportExcel = async () => {
     setExportingXlsx(true);
     try {
       const { exportToExcel } = await import('../utils/excelExport');
@@ -155,6 +161,11 @@ export default function Report() {
     } finally {
       setExportingXlsx(false);
     }
+  };
+
+  const handleExportExcel = async () => {
+    if (!isPro) { setUpgradeFeature(PRO_FEATURES.EXCEL_EXPORT); setShowUpgrade(true); return; }
+    await doExportExcel();
   };
 
   return (
@@ -196,19 +207,23 @@ export default function Report() {
             </div>
           </div>
 
-          {activeProject?.budget > 0 && period === 'all' && (
+          {(activeProject?.budget > 0 && period === 'all') || momChange !== null ? (
             <div style={{ display: 'flex', gap: 8, padding: '0 var(--px) 12px' }}>
-              <div className="report-stat-card">
-                <div className="report-stat-value">{formatCompact(activeProject.budget)}</div>
-                <div className="report-stat-label">Budget</div>
-              </div>
-              <div className="report-stat-card">
-                <div className="report-stat-value" style={{ color: activeProject.budget - totalSpent < 0 ? 'var(--danger)' : 'var(--green)' }}>
-                  {formatCompact(Math.abs(activeProject.budget - totalSpent))}
-                  {activeProject.budget - totalSpent < 0 ? ' over' : ' left'}
-                </div>
-                <div className="report-stat-label">Remaining</div>
-              </div>
+              {activeProject?.budget > 0 && period === 'all' && (
+                <>
+                  <div className="report-stat-card">
+                    <div className="report-stat-value">{formatCompact(activeProject.budget)}</div>
+                    <div className="report-stat-label">Budget</div>
+                  </div>
+                  <div className="report-stat-card">
+                    <div className="report-stat-value" style={{ color: activeProject.budget - totalSpent < 0 ? 'var(--danger)' : 'var(--green)' }}>
+                      {formatCompact(Math.abs(activeProject.budget - totalSpent))}
+                      {activeProject.budget - totalSpent < 0 ? ' over' : ' left'}
+                    </div>
+                    <div className="report-stat-label">Remaining</div>
+                  </div>
+                </>
+              )}
               {momChange !== null && (
                 <div className="report-stat-card">
                   <div className="report-stat-value" style={{ color: momChange > 0 ? 'var(--danger)' : 'var(--green)', display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -219,7 +234,7 @@ export default function Report() {
                 </div>
               )}
             </div>
-          )}
+          ) : null}
 
           {pendingTotal > 0 && (
             <div style={{ padding: '0 var(--px) 12px' }}>
@@ -334,7 +349,13 @@ export default function Report() {
         </>
       )}
 
-      {showUpgrade && <UpgradePrompt feature={upgradeFeature} onClose={() => setShowUpgrade(false)} onUpgraded={() => setShowUpgrade(false)} />}
+      {showUpgrade && (
+        <UpgradePrompt
+          feature={upgradeFeature}
+          onClose={() => setShowUpgrade(false)}
+          onUpgraded={() => { setShowUpgrade(false); doExportExcel(); }}
+        />
+      )}
     </div>
   );
 }

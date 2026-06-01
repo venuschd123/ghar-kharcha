@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { ArrowLeft, Plus, Phone, Trash2, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Plus, Phone, Trash2, ChevronRight, Pencil } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -68,6 +68,61 @@ function AddVendorSheet({ projectId, onClose }) {
   );
 }
 
+function EditVendorSheet({ vendor, onClose }) {
+  const [name, setName] = useState(vendor.name);
+  const [type, setType] = useState(vendor.type);
+  const [phone, setPhone] = useState(vendor.phone || '');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    await db.vendors.update(vendor.id, { name: name.trim(), type, phone: phone.trim() });
+    onClose();
+  };
+
+  return (
+    <div className="bottom-overlay" onClick={onClose}>
+      <div className="bottom-sheet" onClick={e => e.stopPropagation()}>
+        <div className="sheet-handle" />
+        <div className="sheet-title">Edit Vendor</div>
+        <div className="sheet-body">
+          <div className="form-section" style={{ marginBottom: 12 }}>
+            <label className="form-label">Name</label>
+            <input className="form-input" placeholder="e.g. Raju Mistri" value={name} onChange={e => setName(e.target.value)} autoFocus maxLength={60} />
+          </div>
+          <div className="form-section" style={{ marginBottom: 12 }}>
+            <label className="form-label">Type</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {Object.entries(TYPE_META).map(([k, v]) => (
+                <button key={k}
+                  onClick={() => setType(k)}
+                  style={{
+                    flex: 1, padding: '10px 0', borderRadius: 12, border: 'none',
+                    fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                    background: type === k ? v.color + '22' : 'var(--surface)',
+                    color: type === k ? v.color : 'var(--text-2)',
+                    outline: type === k ? `2px solid ${v.color}44` : 'none',
+                  }}
+                >
+                  {v.icon} {v.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="form-section" style={{ marginBottom: 16 }}>
+            <label className="form-label">Phone (optional)</label>
+            <input className="form-input" placeholder="e.g. 98765 43210" value={phone} onChange={e => setPhone(e.target.value)} inputMode="tel" maxLength={15} />
+          </div>
+          <button className="btn btn-primary btn-full" onClick={handleSave} disabled={!name.trim() || saving}>
+            {saving ? 'Saving…' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function VendorDetail() {
   const { vendorId } = useParams();
   const navigate = useNavigate();
@@ -81,6 +136,7 @@ export function VendorDetail() {
     [vid], []
   );
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
   if (!vendor || !categories || !projects) return <div className="page-loading">Loading…</div>;
 
@@ -94,7 +150,15 @@ export function VendorDetail() {
       <header className="page-header">
         <button className="back-btn" onClick={() => navigate(-1)}><ArrowLeft size={20} /></button>
         <span className="page-title" style={{ fontSize: 18 }}>{vendor.name}</span>
-        <button className="delete-btn" onClick={() => setConfirmDelete(true)}><Trash2 size={17} /></button>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            onClick={() => setShowEdit(true)}
+            style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--surface)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}
+          >
+            <Pencil size={16} />
+          </button>
+          <button className="delete-btn" onClick={() => setConfirmDelete(true)}><Trash2 size={17} /></button>
+        </div>
       </header>
 
       <div style={{ padding: '0 var(--px) 16px' }}>
@@ -144,6 +208,7 @@ export function VendorDetail() {
         onConfirm={async () => { await db.vendors.delete(vid); navigate(-1); }}
         onCancel={() => setConfirmDelete(false)}
       />
+      {showEdit && <EditVendorSheet vendor={vendor} onClose={() => setShowEdit(false)} />}
 
       <div style={{ padding: '0 var(--px)' }}>
         <div className="section-title" style={{ marginBottom: 10 }}>Payment History</div>

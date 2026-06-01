@@ -13,6 +13,10 @@ export default function Expenses() {
     () => activeProject ? db.expenses.where('projectId').equals(activeProject.id).toArray() : [],
     [activeProject?.id], []
   );
+  const vendors = useLiveQuery(
+    () => activeProject ? db.vendors.where('projectId').equals(activeProject.id).toArray() : [],
+    [activeProject?.id], []
+  );
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState(null);
 
@@ -24,8 +28,10 @@ export default function Expenses() {
     const q = search.toLowerCase();
     filtered = filtered.filter(e => {
       const cat = categories.find(c => c.id === e.categoryId);
+      const vendor = vendors?.find(v => v.id === e.vendorId);
       return (e.note && e.note.toLowerCase().includes(q)) ||
         (cat && cat.name.toLowerCase().includes(q)) ||
+        (vendor && vendor.name.toLowerCase().includes(q)) ||
         String(e.amount).includes(q);
     });
   }
@@ -48,7 +54,7 @@ export default function Expenses() {
         <input
           type="text"
           className="expenses-search"
-          placeholder="Search note, category, amount..."
+          placeholder="Search note, category, vendor, amount..."
           value={search}
           onChange={e => setSearch(e.target.value)}
         />

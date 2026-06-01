@@ -7,7 +7,9 @@ function fmt(amount) {
 
 export async function exportToExcel(project, expenses, categories, vendors) {
   // Dynamic import so it doesn't bloat the main bundle
-  const XLSX = await import('xlsx');
+  const xlsxModule = await import('xlsx');
+  // Handle both CJS-wrapped (default) and direct ESM exports
+  const XLSX = xlsxModule.default ?? xlsxModule;
 
   const wb = XLSX.utils.book_new();
   wb.Props = {

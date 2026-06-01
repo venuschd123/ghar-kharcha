@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
-import { Save, Trash2, Download, Upload, Info, ListChecks, FileText, Sun, Moon, Monitor, Share2, Lock, Unlock, Zap, Target, Building2, ShieldCheck, WifiOff, Flag, ScrollText } from 'lucide-react';
+import { Save, Trash2, Download, Upload, Info, ListChecks, FileText, Sun, Moon, Monitor, Share2, Lock, Unlock, Zap, Target, Building2, ShieldCheck, WifiOff, Flag, ScrollText, Pencil, Plus, Tags } from 'lucide-react';
 import { CURRENCIES, UNITS, setCurrency, setUnit } from '../utils/formatters';
 import { useProject } from '../context/ProjectContext';
 import { usePro } from '../context/ProContext';
@@ -15,6 +15,81 @@ const THEMES = [
   { key: 'dark', label: 'Dark', Icon: Moon },
   { key: 'system', label: 'Auto', Icon: Monitor },
 ];
+
+const CAT_COLORS = [
+  '#e17055','#d63031','#e84393','#6c5ce7','#a29bfe',
+  '#0984e3','#00b894','#00cec9','#fdcb6e','#f39c12',
+  '#2d3436','#636e72','#74b9ff','#fd79a8','#55efc4',
+];
+
+function EditCategorySheet({ category, onClose }) {
+  const [name, setName] = useState(category?.name ?? '');
+  const [icon, setIcon] = useState(category?.icon ?? '📦');
+  const [color, setColor] = useState(category?.color ?? '#636e72');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    if (category) {
+      await db.categories.update(category.id, { name: name.trim(), icon: icon.trim() || '📦', color });
+    } else {
+      await db.categories.add({ name: name.trim(), icon: icon.trim() || '📦', color, isCustom: true });
+    }
+    onClose();
+  };
+
+  return (
+    <div className="bottom-overlay" onClick={onClose}>
+      <div className="bottom-sheet" onClick={e => e.stopPropagation()}>
+        <div className="sheet-handle" />
+        <div className="sheet-title">{category ? 'Edit Category' : 'Add Category'}</div>
+        <div className="sheet-body">
+          <div className="form-section" style={{ marginBottom: 12 }}>
+            <label className="form-label">Name</label>
+            <input className="form-input" placeholder="e.g. Solar Panels" value={name} onChange={e => setName(e.target.value)} autoFocus maxLength={40} />
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+            <div className="form-section" style={{ flex: 1, marginBottom: 0 }}>
+              <label className="form-label">Emoji Icon</label>
+              <input
+                className="form-input"
+                placeholder="e.g. ☀️"
+                value={icon}
+                onChange={e => setIcon(e.target.value)}
+                style={{ fontSize: 20, textAlign: 'center' }}
+                maxLength={4}
+              />
+            </div>
+            <div style={{ width: 56, height: 56, marginTop: 20, borderRadius: 12, background: color + '22', border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>
+              {icon || '📦'}
+            </div>
+          </div>
+          <div className="form-section" style={{ marginBottom: 16 }}>
+            <label className="form-label">Color</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {CAT_COLORS.map(c => (
+                <button
+                  key={c}
+                  onClick={() => setColor(c)}
+                  style={{
+                    width: 32, height: 32, borderRadius: '50%', background: c, border: 'none',
+                    cursor: 'pointer', outline: color === c ? `3px solid ${c}` : 'none',
+                    outlineOffset: 2, transform: color === c ? 'scale(1.15)' : 'none',
+                    transition: 'transform 0.15s',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          <button className="btn btn-primary btn-full" onClick={handleSave} disabled={!name.trim() || saving}>
+            {saving ? 'Saving…' : category ? 'Save Changes' : 'Add Category'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function applyTheme(theme) {
   const root = document.documentElement;
@@ -49,6 +124,8 @@ export default function Settings() {
   const [localSqft, setLocalSqft] = useState(null);
   const [saved, setSaved] = useState(false);
   const [catBudgetEdits, setCatBudgetEdits] = useState({});
+  const [editCategory, setEditCategory] = useState(null);  // category object or 'new'
+  const [deleteCategory, setDeleteCategory] = useState(null); // category to delete
 
   const categories = useLiveQuery(() => db.categories.toArray(), [], []);
   const catBudgets = useLiveQuery(
@@ -80,6 +157,23 @@ export default function Settings() {
     setCatBudgetEdits({});
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!deleteCategory) return;
+    const miscCat = categories?.find(c => c.name.includes('Misc'));
+    if (miscCat && miscCat.id !== deleteCategory.id) {
+      // Reassign all expenses using this category to Misc
+      const affected = await db.expenses.where('categoryId').equals(deleteCategory.id).toArray();
+      for (const exp of affected) {
+        await db.expenses.update(exp.id, { categoryId: miscCat.id });
+      }
+    }
+    // Delete category budget if exists
+    const catBudget = await db.categoryBudgets.where('categoryId').equals(deleteCategory.id).first();
+    if (catBudget) await db.categoryBudgets.delete(catBudget.id);
+    await db.categories.delete(deleteCategory.id);
+    setDeleteCategory(null);
   };
 
   const name = localName ?? project?.name ?? '';
@@ -272,6 +366,55 @@ export default function Settings() {
           </button>
         </div>
       </div>
+
+      {/* Category Management */}
+      {categories && categories.length > 0 && (
+        <div className="settings-card">
+          <div className="settings-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Tags size={16} color="var(--accent)" />
+              <div className="settings-card-title">Categories</div>
+            </div>
+            <button
+              onClick={() => setEditCategory('new')}
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 10, border: 'none', background: 'var(--accent-dim)', color: 'var(--accent)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              <Plus size={13} /> Add
+            </button>
+          </div>
+          <div className="settings-card-body" style={{ gap: 2, padding: '0 0 8px' }}>
+            {categories.map(cat => (
+              <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 20px' }}>
+                <span style={{
+                  width: 34, height: 34, borderRadius: 10, background: cat.color + '22',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0,
+                }}>
+                  {cat.icon}
+                </span>
+                <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {cat.name}
+                </span>
+                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                  <button
+                    onClick={() => setEditCategory(cat)}
+                    style={{ width: 32, height: 32, borderRadius: 8, border: 'none', cursor: 'pointer', background: 'var(--surface)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    aria-label={`Edit ${cat.name}`}
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    onClick={() => setDeleteCategory(cat)}
+                    style={{ width: 32, height: 32, borderRadius: 8, border: 'none', cursor: 'pointer', background: 'var(--surface)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.7 }}
+                    aria-label={`Delete ${cat.name}`}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Category Budgets */}
       {categories && categories.length > 0 && (
@@ -599,6 +742,21 @@ export default function Settings() {
         onConfirm={confirm?.onConfirm}
         onCancel={() => setConfirm(null)}
       />
+      <ConfirmDialog
+        open={!!deleteCategory}
+        title={`Delete "${deleteCategory?.name}"?`}
+        message={`All expenses in this category will be moved to Miscellaneous. This cannot be undone.`}
+        danger={true}
+        confirmLabel="Delete Category"
+        onConfirm={handleDeleteCategory}
+        onCancel={() => setDeleteCategory(null)}
+      />
+      {editCategory && (
+        <EditCategorySheet
+          category={editCategory === 'new' ? null : editCategory}
+          onClose={() => setEditCategory(null)}
+        />
+      )}
     </div>
   );
 }
