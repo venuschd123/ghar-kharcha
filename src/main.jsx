@@ -13,6 +13,9 @@ import Privacy from './pages/Privacy';
 import ErrorBoundary from './components/ErrorBoundary';
 import Onboarding from './components/Onboarding';
 import { ToastProvider } from './components/Toast';
+import { ProjectProvider } from './context/ProjectContext';
+import { ProProvider } from './context/ProContext';
+import PinLock, { isPinEnabled } from './components/PinLock';
 import { db, initDB } from './db';
 import { setCurrency, setUnit } from './utils/formatters';
 import './index.css';
@@ -20,6 +23,7 @@ import './index.css';
 function App() {
   const [ready, setReady] = useState(false);
   const [onboarded, setOnboarded] = useState(true);
+  const [locked, setLocked] = useState(false);
 
   useEffect(() => {
     initDB()
@@ -32,6 +36,7 @@ function App() {
         ]);
         if (currPref?.value) setCurrency(currPref.value);
         if (unitPref?.value) setUnit(unitPref.value);
+
         const theme = themePref?.value || 'light';
         if (theme === 'system') {
           const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -39,6 +44,9 @@ function App() {
         } else {
           document.documentElement.setAttribute('data-theme', theme);
         }
+
+        const pinOn = await isPinEnabled();
+        setLocked(pinOn);
         setOnboarded(onb?.value === 'true');
         setReady(true);
       })
@@ -58,6 +66,10 @@ function App() {
     );
   }
 
+  if (locked) {
+    return <PinLock onUnlocked={() => setLocked(false)} />;
+  }
+
   if (!onboarded) {
     return (
       <ErrorBoundary>
@@ -68,24 +80,28 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <ToastProvider>
-      <HashRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/add" element={<AddExpense />} />
-            <Route path="/edit/:id" element={<AddExpense />} />
-            <Route path="/expenses" element={<Expenses />} />
-            <Route path="/report" element={<Report />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/vendors" element={<Vendors />} />
-            <Route path="/vendors/:vendorId" element={<VendorDetail />} />
-            <Route path="/phases" element={<Phases />} />
-            <Route path="/privacy" element={<Privacy />} />
-          </Route>
-        </Routes>
-      </HashRouter>
-      </ToastProvider>
+      <ProProvider>
+        <ProjectProvider>
+          <ToastProvider>
+            <HashRouter>
+              <Routes>
+                <Route element={<Layout />}>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/add" element={<AddExpense />} />
+                  <Route path="/edit/:id" element={<AddExpense />} />
+                  <Route path="/expenses" element={<Expenses />} />
+                  <Route path="/report" element={<Report />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/vendors" element={<Vendors />} />
+                  <Route path="/vendors/:vendorId" element={<VendorDetail />} />
+                  <Route path="/phases" element={<Phases />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                </Route>
+              </Routes>
+            </HashRouter>
+          </ToastProvider>
+        </ProjectProvider>
+      </ProProvider>
     </ErrorBoundary>
   );
 }

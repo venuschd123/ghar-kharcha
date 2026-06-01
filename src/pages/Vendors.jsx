@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { ArrowLeft, Plus, Phone, Trash2, ChevronRight } from 'lucide-react';
+import { useProject } from '../context/ProjectContext';
 
 const TYPE_META = {
   labour:   { label: 'Labour', color: '#e17055', icon: '👷' },
@@ -176,8 +177,8 @@ export function VendorDetail() {
 
 export default function Vendors() {
   const navigate = useNavigate();
-  const projects = useLiveQuery(() => db.projects.toArray());
-  const projectId = projects?.[0]?.id;
+  const { activeProject } = useProject();
+  const projectId = activeProject?.id;
   const vendors = useLiveQuery(
     () => projectId != null ? db.vendors.where('projectId').equals(projectId).toArray() : [],
     [projectId], []
@@ -189,7 +190,7 @@ export default function Vendors() {
   const [filterType, setFilterType] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
 
-  if (!vendors || !expenses || !projects) return <div className="page-loading">Loading…</div>;
+  if (!vendors || !expenses || !activeProject) return <div className="page-loading">Loading…</div>;
 
   const filtered = filterType ? vendors.filter(v => v.type === filterType) : vendors;
 

@@ -3,10 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { getToday, getYesterday, formatCurrency, formatDateShort } from '../utils/formatters';
-import { ArrowLeft, Camera, Trash2, Check, ChevronDown, Clock, Copy, Mic } from 'lucide-react';
+import { ArrowLeft, Camera, Trash2, Check, ChevronDown, Clock, Copy, Mic, ScanLine } from 'lucide-react';
 import Numpad from '../components/Numpad';
 import { useToast } from '../components/Toast';
 import { isVoiceSupported, startVoiceRecognition, parseSpokenAmount, parseSpokenCategory } from '../utils/voiceInput';
+import { useProject } from '../context/ProjectContext';
 
 const VENDOR_COLORS = { labour: '#e17055', material: '#0984e3', service: '#6c5ce7' };
 
@@ -16,16 +17,16 @@ export default function AddExpense() {
   const isEdit = Boolean(id);
   const showToast = useToast();
 
+  const { activeProject } = useProject();
   const categories = useLiveQuery(() => db.categories.toArray());
-  const projects = useLiveQuery(() => db.projects.toArray());
   const vendors = useLiveQuery(() => {
-    const pid = projects?.[0]?.id;
+    const pid = activeProject?.id;
     return pid != null ? db.vendors.where('projectId').equals(pid).toArray() : [];
-  }, [projects]);
+  }, [activeProject?.id]);
   const phases = useLiveQuery(() => {
-    const pid = projects?.[0]?.id;
+    const pid = activeProject?.id;
     return pid != null ? db.phases.where('projectId').equals(pid).sortBy('order') : [];
-  }, [projects]);
+  }, [activeProject?.id]);
 
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState(null);
@@ -42,10 +43,12 @@ export default function AddExpense() {
   const [newCatName, setNewCatName] = useState('');
   const [newCatIcon, setNewCatIcon] = useState('📌');
   const [listening, setListening] = useState(false);
+  const [ocrLoading, setOcrLoading] = useState(false);
   const fileRef = useRef();
+  const ocrRef = useRef();
   const kbInputRef = useRef();
 
-  const projectId = isEdit ? editProjectId : (projects?.[0]?.id ?? null);
+  const projectId = isEdit ? editProjectId : (activeProject?.id ?? null);
 
   useEffect(() => {
     if (isEdit && id) {
@@ -86,6 +89,48 @@ export default function AddExpense() {
       img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleOCR = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setOcrLoading(true);
+    showToast('Scanning receipt… this may take 10–20 seconds', 'info');
+    try {
+      const { createWorker } = await import('tesseract.js');
+      const worker = await createWorker('eng');
+      const { data: { text } } = await worker.recognize(file);
+      await worker.terminate();
+
+      // Extract amount: look for largest number with optional ₹/Rs/Total prefix
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      let bestAmount = null;
+      const totalLine = lines.find(l => /total|amount|grand|net|bill/i.test(l));
+      const searchLines = totalLine ? [totalLine, ...lines] : lines;
+      for (const line of searchLines) {
+        const nums = line.match(/(?:rs\.?|₹|inr)?\s*(\d[\d,]*\.?\d{0,2})/gi) || [];
+        for (const n of nums) {
+          const val = parseFloat(n.replace(/[^\d.]/g, ''));
+          if (val > 10 && val < 10000000) {
+            if (!bestAmount || val > bestAmount) bestAmount = val;
+          }
+        }
+        if (totalLine && line === totalLine && bestAmount) break;
+      }
+      if (bestAmount) {
+        setAmount(String(bestAmount));
+        showToast(`Amount detected: ₹${bestAmount.toLocaleString('en-IN')}`, 'success');
+      }
+
+      // Try to extract a note from common receipt patterns
+      const noteLine = lines.find(l => l.length > 4 && l.length < 60 && !/^\d/.test(l) && !/total|tax|gst/i.test(l));
+      if (noteLine && !note) setNote(noteLine.slice(0, 60));
+
+    } catch (err) {
+      console.error('OCR failed:', err);
+      showToast('Could not read receipt. Try a clearer photo.', 'error');
+    }
+    setOcrLoading(false);
   };
 
   const handleSave = async () => {
@@ -129,7 +174,7 @@ export default function AddExpense() {
     setDate(getToday());
   };
 
-  if (!categories || !projects) return <div className="page-loading">Loading…</div>;
+  if (!categories || !activeProject) return <div className="page-loading">Loading…</div>;
 
   const selectedCat = categories.find(c => c.id === categoryId);
   const selectedVendor = vendors?.find(v => v.id === vendorId);
@@ -293,6 +338,15 @@ export default function AddExpense() {
         >
           {photo ? <Check size={16} /> : <Camera size={16} />}
           <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="camera-file" />
+        </button>
+        <button
+          className="ocr-btn"
+          onClick={() => ocrRef.current?.click()}
+          disabled={ocrLoading}
+          title="Scan receipt to auto-fill amount"
+        >
+          {ocrLoading ? <span className="ocr-spinner" /> : <ScanLine size={16} />}
+          <input ref={ocrRef} type="file" accept="image/*" onChange={handleOCR} className="camera-file" />
         </button>
       </div>
 

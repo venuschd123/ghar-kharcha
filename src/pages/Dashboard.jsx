@@ -2,7 +2,9 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
 import { formatCurrency, formatCompact, formatDateLabel, groupByCategory, getToday, getDaysAgo } from '../utils/formatters';
-import { PlusCircle, ArrowRight, Settings, AlertCircle, X } from 'lucide-react';
+import { PlusCircle, ArrowRight, Settings, AlertCircle, TrendingUp, Calendar, Receipt } from 'lucide-react';
+import { useProject } from '../context/ProjectContext';
+import ProjectSwitcher from '../components/ProjectSwitcher';
 
 const RING_R = 46;
 const CIRC = 2 * Math.PI * RING_R;
@@ -26,9 +28,12 @@ function BudgetRing({ pct, color }) {
 }
 
 export default function Dashboard() {
-  const projects = useLiveQuery(() => db.projects.toArray());
+  const { activeProject } = useProject();
   const categories = useLiveQuery(() => db.categories.toArray());
-  const activeProject = projects?.[0] ?? null;
+  const catBudgets = useLiveQuery(
+    () => activeProject ? db.categoryBudgets.where('projectId').equals(activeProject.id).toArray() : [],
+    [activeProject?.id], []
+  );
 
   const expenses = useLiveQuery(
     () => activeProject ? db.expenses.where('projectId').equals(activeProject.id).toArray() : [],
@@ -82,12 +87,19 @@ export default function Dashboard() {
   const progressPct = phases.length > 0 ? Math.round((donePhases / phases.length) * 100) : 0;
   const costPerSqft = sqft > 0 ? Math.round(totalSpent / sqft) : null;
 
+  // Data insights
+  const sortedByAmount = [...paidExpenses].sort((a, b) => b.amount - a.amount);
+  const highestExpense = sortedByAmount[0];
+  const highestCat = highestExpense ? categories?.find(c => c.id === highestExpense.categoryId) : null;
+  const monthAgo = getDaysAgo(30);
+  const monthSpent = paidExpenses.filter(e => e.date >= monthAgo).reduce((s, e) => s + e.amount, 0);
+
   return (
     <div className="page dashboard">
       <div className="dash-header">
         <div>
           <div className="dash-title">Ghar Kharcha</div>
-          <div className="dash-project">{activeProject.name}</div>
+          <ProjectSwitcher />
         </div>
         <Link to="/settings" className="header-action">
           <Settings size={18} />
@@ -207,19 +219,66 @@ export default function Dashboard() {
           <div className="cat-bar-list">
             {categoryBreakdown.slice(0, 5).map((item, i) => {
               const pctBar = totalSpent > 0 ? (item.total / totalSpent) * 100 : 0;
+              const catBudget = catBudgets?.find(b => b.categoryId === item.category.id);
+              const catBudgetPct = catBudget?.budget > 0 ? Math.round((item.total / catBudget.budget) * 100) : null;
+              const budgetWarn = catBudgetPct !== null && catBudgetPct >= 80;
               return (
                 <div key={i} className="cat-bar-row">
                   <div className="cat-bar-left">
                     <span className="cat-bar-icon">{item.category.icon}</span>
-                    <span className="cat-bar-name">{item.category.name}</span>
+                    <div>
+                      <span className="cat-bar-name">{item.category.name}</span>
+                      {catBudgetPct !== null && (
+                        <span style={{ fontSize: 10, fontWeight: 700, marginLeft: 6, color: budgetWarn ? 'var(--danger)' : 'var(--text-3)' }}>
+                          {catBudgetPct}% of budget
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="cat-bar-track">
-                    <div className="cat-bar-fill" style={{ width: `${pctBar}%`, background: item.category.color }} />
+                    <div className="cat-bar-fill" style={{ width: `${pctBar}%`, background: budgetWarn ? 'var(--danger)' : item.category.color }} />
                   </div>
                   <div className="cat-bar-amount">{formatCompact(item.total)}</div>
                 </div>
               );
             })}
+          </div>
+        </section>
+      )}
+
+      {/* Insights strip */}
+      {paidExpenses.length >= 3 && (
+        <section className="section" style={{ marginTop: 8 }}>
+          <div className="section-title">Insights</div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
+            {highestExpense && (
+              <div className="insight-chip">
+                <TrendingUp size={13} color="var(--accent)" />
+                <div>
+                  <div className="insight-label">Highest payment</div>
+                  <div className="insight-value">{formatCurrency(highestExpense.amount)}</div>
+                  <div className="insight-sub">{highestCat?.name || 'Unknown'}</div>
+                </div>
+              </div>
+            )}
+            <div className="insight-chip">
+              <Calendar size={13} color="var(--green)" />
+              <div>
+                <div className="insight-label">Last 30 days</div>
+                <div className="insight-value" style={{ color: 'var(--green)' }}>{formatCompact(monthSpent)}</div>
+                <div className="insight-sub">{paidExpenses.filter(e => e.date >= monthAgo).length} entries</div>
+              </div>
+            </div>
+            {costPerSqft && (
+              <div className="insight-chip">
+                <Receipt size={13} color="var(--gold)" />
+                <div>
+                  <div className="insight-label">Cost / sq.ft</div>
+                  <div className="insight-value" style={{ color: 'var(--gold)' }}>₹{costPerSqft.toLocaleString('en-IN')}</div>
+                  <div className="insight-sub">{activeProject.sqft.toLocaleString()} sq.ft total</div>
+                </div>
+              </div>
+            )}
           </div>
         </section>
       )}

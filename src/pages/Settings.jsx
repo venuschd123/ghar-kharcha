@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../db';
-import { Save, Trash2, Download, Upload, Info, ListChecks, FileText, Sun, Moon, Monitor, Share2, Lock, Unlock, Zap } from 'lucide-react';
+import { Save, Trash2, Download, Upload, Info, ListChecks, FileText, Sun, Moon, Monitor, Share2, Lock, Unlock, Zap, Target } from 'lucide-react';
 import { CURRENCIES, UNITS, setCurrency, setUnit } from '../utils/formatters';
 import { useProject } from '../context/ProjectContext';
 import { usePro } from '../context/ProContext';
@@ -26,7 +26,7 @@ function applyTheme(theme) {
 }
 
 export default function Settings() {
-  const { activeProject: project } = useProject();
+  const { activeProject: project, projects } = useProject();
   const { isPro, status: proStatus } = usePro();
   const expenseCount = useLiveQuery(() => db.expenses.count(), [], 0);
   const themeSetting = useLiveQuery(() => db.settings.get('theme'));
@@ -45,6 +45,39 @@ export default function Settings() {
   const [localBudget, setLocalBudget] = useState(null);
   const [localSqft, setLocalSqft] = useState(null);
   const [saved, setSaved] = useState(false);
+  const [catBudgetEdits, setCatBudgetEdits] = useState({});
+
+  const categories = useLiveQuery(() => db.categories.toArray(), [], []);
+  const catBudgets = useLiveQuery(
+    () => project ? db.categoryBudgets.where('projectId').equals(project.id).toArray() : [],
+    [project?.id], []
+  );
+
+  const getCatBudget = (catId) => {
+    if (catBudgetEdits[catId] !== undefined) return catBudgetEdits[catId];
+    const saved = catBudgets?.find(b => b.categoryId === catId);
+    return saved?.budget > 0 ? String(saved.budget) : '';
+  };
+
+  const handleCatBudgetChange = (catId, val) => {
+    setCatBudgetEdits(prev => ({ ...prev, [catId]: val.replace(/[^0-9]/g, '') }));
+  };
+
+  const handleSaveCatBudgets = async () => {
+    if (!project) return;
+    for (const [catId, val] of Object.entries(catBudgetEdits)) {
+      const budget = val ? parseInt(val, 10) : 0;
+      const existing = catBudgets?.find(b => b.categoryId === Number(catId));
+      if (existing) {
+        await db.categoryBudgets.update(existing.id, { budget });
+      } else {
+        await db.categoryBudgets.add({ projectId: project.id, categoryId: Number(catId), budget });
+      }
+    }
+    setCatBudgetEdits({});
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   const name = localName ?? project?.name ?? '';
   const budget = localBudget ?? (project?.budget > 0 ? String(project.budget) : '');
@@ -184,6 +217,49 @@ export default function Settings() {
           </button>
         </div>
       </div>
+
+      {/* Category Budgets */}
+      {categories && categories.length > 0 && (
+        <div className="settings-card">
+          <div className="settings-card-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Target size={16} color="var(--accent)" />
+              <div className="settings-card-title">Category Budgets</div>
+            </div>
+          </div>
+          <div className="settings-card-body">
+            <div className="form-hint" style={{ marginBottom: 12 }}>
+              Set spending limits per category. Warnings appear on the dashboard when you approach the limit.
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {categories.map(cat => (
+                <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 18, width: 28, textAlign: 'center' }}>{cat.icon}</span>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {cat.name}
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', background: 'var(--surface)' }}>
+                    <span style={{ padding: '8px 8px 8px 10px', fontSize: 13, color: 'var(--text-2)', fontWeight: 700 }}>₹</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="No limit"
+                      value={getCatBudget(cat.id)}
+                      onChange={e => handleCatBudgetChange(cat.id, e.target.value)}
+                      style={{ width: 90, padding: '8px 10px 8px 0', border: 'none', background: 'transparent', fontSize: 13, color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button className="btn btn-primary btn-full" style={{ marginTop: 12 }} onClick={handleSaveCatBudgets}
+              disabled={Object.keys(catBudgetEdits).length === 0}>
+              <Save size={16} />
+              {saved ? '✓ Saved!' : 'Save Budgets'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Theme */}
       <div className="settings-card">

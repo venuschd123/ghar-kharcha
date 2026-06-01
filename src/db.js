@@ -25,6 +25,10 @@ db.version(3).stores({
   });
 });
 
+db.version(4).stores({
+  categoryBudgets: '++id, projectId, categoryId',
+});
+
 export const DEFAULT_CATEGORIES = [
   { name: 'Labour / Mistri', icon: '👷', color: '#e17055' },
   { name: 'Cement & Concrete', icon: '🧱', color: '#636e72' },

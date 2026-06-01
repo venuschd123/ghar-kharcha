@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { formatCurrency } from '../utils/formatters';
 import { Check, Circle, Loader } from 'lucide-react';
+import { useProject } from '../context/ProjectContext';
 
 const STATUS_CYCLE = { pending: 'active', active: 'done', done: 'pending' };
 const STATUS_META = {
@@ -11,8 +12,8 @@ const STATUS_META = {
 };
 
 export default function Phases() {
-  const projects = useLiveQuery(() => db.projects.toArray());
-  const projectId = projects?.[0]?.id;
+  const { activeProject } = useProject();
+  const projectId = activeProject?.id;
 
   const phases = useLiveQuery(
     () => projectId != null
@@ -27,7 +28,7 @@ export default function Phases() {
     [projectId], []
   );
 
-  if (!phases || !expenses || !projects) return <div className="page-loading">Loading…</div>;
+  if (!phases || !expenses || !activeProject) return <div className="page-loading">Loading…</div>;
 
   const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
   const doneCount = phases.filter(p => p.status === 'done').length;

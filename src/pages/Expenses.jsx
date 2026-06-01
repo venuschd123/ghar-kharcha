@@ -4,20 +4,19 @@ import { Link } from 'react-router-dom';
 import { db } from '../db';
 import { formatCurrency, formatDate, formatDateLabel, groupByDate } from '../utils/formatters';
 import { Check } from 'lucide-react';
+import { useProject } from '../context/ProjectContext';
 
 export default function Expenses() {
+  const { activeProject } = useProject();
   const categories = useLiveQuery(() => db.categories.toArray());
-  const projects = useLiveQuery(() => db.projects.toArray());
-  const projectId = projects?.[0]?.id;
   const expenses = useLiveQuery(
-    () => projectId != null ? db.expenses.where('projectId').equals(projectId).toArray() : [],
-    [projectId],
-    []
+    () => activeProject ? db.expenses.where('projectId').equals(activeProject.id).toArray() : [],
+    [activeProject?.id], []
   );
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState(null);
 
-  if (!categories || !projects || !expenses) return <div className="page-loading">Loading…</div>;
+  if (!categories || !activeProject || !expenses) return <div className="page-loading">Loading…</div>;
 
   let filtered = expenses;
   if (filterCat) filtered = filtered.filter(e => e.categoryId === filterCat);
