@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { db } from '../db';
-import { formatCurrency, formatDate, formatDateLabel, groupByDate } from '../utils/formatters';
+import { formatCurrency, formatDate, formatDateLabel, groupByDate, getToday, getDaysAgo } from '../utils/formatters';
 import { Check, Search, Receipt, Filter } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
 
 export default function Expenses() {
   const { activeProject } = useProject();
+  const location = useLocation();
   const categories = useLiveQuery(() => db.categories.toArray());
   const expenses = useLiveQuery(
     () => activeProject ? db.expenses.where('projectId').equals(activeProject.id).toArray() : [],
@@ -19,10 +20,23 @@ export default function Expenses() {
   );
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState(null);
+  const [dateFilter, setDateFilter] = useState(null); // 'today' | 'week' | null
+
+  // Apply date filter passed from Dashboard stat cards
+  useEffect(() => {
+    const f = location.state?.filter;
+    if (f === 'today' || f === 'week') setDateFilter(f);
+    else setDateFilter(null);
+  }, [location.state?.filter]);
 
   if (!categories || !activeProject || !expenses) return <div className="page-loading">Loading...</div>;
 
+  const today   = getToday();
+  const weekAgo = getDaysAgo(7);
+
   let filtered = expenses;
+  if (dateFilter === 'today') filtered = filtered.filter(e => e.date === today);
+  else if (dateFilter === 'week') filtered = filtered.filter(e => e.date >= weekAgo);
   if (filterCat) filtered = filtered.filter(e => e.categoryId === filterCat);
   if (search.trim()) {
     const q = search.toLowerCase();
@@ -39,14 +53,33 @@ export default function Expenses() {
   const grouped = groupByDate(filtered);
   const totalFiltered = filtered.filter(e => !e.isPending).reduce((s, e) => s + e.amount, 0);
 
+  const dateFilterLabel = dateFilter === 'today' ? 'Today' : dateFilter === 'week' ? 'This Week' : null;
+
   return (
     <div className="page expenses-page">
       <header className="page-header">
-        <h1 className="page-title">Expenses</h1>
+        <h1 className="page-title">Expenses{dateFilterLabel ? ` — ${dateFilterLabel}` : ''}</h1>
         <span style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 600, background: 'var(--surface)', padding: '5px 10px', borderRadius: 20 }}>
           {filtered.length}
         </span>
       </header>
+
+      {/* Active date filter chip */}
+      {dateFilter && (
+        <div style={{ padding: '0 var(--px) 8px' }}>
+          <button
+            onClick={() => setDateFilter(null)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+              background: 'var(--accent-dim)', color: 'var(--accent)',
+              border: '1.5px solid var(--accent-border)', cursor: 'pointer',
+            }}
+          >
+            {dateFilterLabel} ×
+          </button>
+        </div>
+      )}
 
       {/* Search */}
       <div className="expenses-search-wrap">
@@ -95,7 +128,7 @@ export default function Expenses() {
       {/* Total strip */}
       {filtered.length > 0 && (
         <div className="expenses-total">
-          {search || filterCat ? 'Filtered total: ' : 'Total paid: '}
+          {search || filterCat || dateFilter ? 'Filtered total: ' : 'Total paid: '}
           <strong>{formatCurrency(totalFiltered)}</strong>
         </div>
       )}

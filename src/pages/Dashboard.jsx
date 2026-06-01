@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, useSpring, useReducedMotion } from 'motion/react';
 import { db } from '../db';
 import { formatCurrency, formatCompact, formatDateLabel, groupByCategory, getToday, getDaysAgo } from '../utils/formatters';
 import {
-  ArrowRight, Settings, AlertCircle, TrendingUp, Calendar,
-  ReceiptText, HardHat, CheckCircle2, Building2, Clock, Plus,
+  ArrowRight, Settings, AlertCircle, TrendingUp, TrendingDown, Calendar,
+  ReceiptText, HardHat, CheckCircle2, Building2, Clock, Plus, Trophy,
+  Users, Zap, Info, Store, MapPin,
 } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
 import ProjectSwitcher from '../components/ProjectSwitcher';
@@ -41,7 +42,6 @@ function useTilt(strength = 6) {
   };
 }
 
-// Stagger container/child variants
 const listVariants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.06 } },
@@ -53,6 +53,7 @@ const itemVariants = {
 
 function BudgetRing({ pct, color }) {
   const offset = CIRC * (1 - Math.min(pct, 100) / 100);
+  const prefersReduced = useReducedMotion();
   return (
     <svg width="120" height="120" viewBox="0 0 120 120" overflow="visible">
       {/* Outer pulse ring */}
@@ -63,7 +64,7 @@ function BudgetRing({ pct, color }) {
         animate={{ opacity: [0, 0.35, 0] }}
         transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut', delay: 1.4 }}
       />
-      {/* Second pulse — offset timing */}
+      {/* Second pulse */}
       <motion.circle
         cx="60" cy="60" r={RING_R + 20}
         fill="none" stroke={color} strokeWidth="1"
@@ -73,6 +74,18 @@ function BudgetRing({ pct, color }) {
       />
       {/* Track */}
       <circle cx="60" cy="60" r={RING_R} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="10" />
+      {/* Animated shimmer on track */}
+      {!prefersReduced && (
+        <motion.circle
+          cx="60" cy="60" r={RING_R} fill="none"
+          stroke="rgba(255,255,255,0.18)" strokeWidth="10"
+          strokeDasharray={`${CIRC * 0.14} ${CIRC * 0.86}`}
+          strokeLinecap="round"
+          transform="rotate(-90 60 60)"
+          animate={{ strokeDashoffset: [0, -CIRC] }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'linear', repeatType: 'loop' }}
+        />
+      )}
       {/* Fill */}
       <motion.circle
         cx="60" cy="60" r={RING_R} fill="none"
@@ -88,10 +101,60 @@ function BudgetRing({ pct, color }) {
   );
 }
 
+function HealthBadge({ score }) {
+  const [showTip, setShowTip] = useState(false);
+  let label, bg, fg;
+  if (score >= 75)      { label = 'Excellent'; bg = 'rgba(16,185,129,.2)'; fg = '#10B981'; }
+  else if (score >= 50) { label = 'On Track';  bg = 'rgba(59,130,246,.2)'; fg = '#60A5FA'; }
+  else if (score >= 25) { label = 'At Risk';   bg = 'rgba(245,158,11,.2)'; fg = '#FBBF24'; }
+  else                  { label = 'Critical';  bg = 'rgba(239,68,68,.2)';  fg = '#F87171'; }
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <motion.button
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.6, duration: 0.35, ease: [0.16,1,0.3,1] }}
+        onClick={() => setShowTip(v => !v)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          background: bg, border: `1px solid ${fg}40`,
+          borderRadius: 20, padding: '4px 9px 4px 6px',
+          cursor: 'pointer', marginTop: 8,
+        }}
+      >
+        <Trophy size={11} color={fg} />
+        <span style={{ fontSize: 11, fontWeight: 800, color: fg, letterSpacing: '.2px' }}>{label}</span>
+        <Info size={9} color={fg} style={{ opacity: 0.7 }} />
+      </motion.button>
+      {showTip && (
+        <div
+          style={{
+            position: 'absolute', top: '100%', left: 0, zIndex: 50, marginTop: 6,
+            background: 'rgba(15,24,41,0.98)', border: '1px solid rgba(255,255,255,.12)',
+            borderRadius: 12, padding: '10px 12px', width: 210,
+            fontSize: 11, color: 'rgba(255,255,255,.7)', lineHeight: 1.6,
+            boxShadow: '0 8px 32px rgba(0,0,0,.5)',
+          }}
+          onClick={() => setShowTip(false)}
+        >
+          <div style={{ fontWeight: 800, color: '#fff', marginBottom: 5, fontSize: 12 }}>Health Score: {Math.round(score)}%</div>
+          <div>Calculated from:</div>
+          <div>· Phases completed</div>
+          <div>· Pending payments ratio</div>
+          <div>· Budget remaining</div>
+          <div>· Entries logged this week</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { activeProject } = useProject();
-  const categories    = useLiveQuery(() => db.categories.toArray());
-  const catBudgets    = useLiveQuery(
+  const categories = useLiveQuery(() => db.categories.toArray());
+  const catBudgets = useLiveQuery(
     () => activeProject ? db.categoryBudgets.where('projectId').equals(activeProject.id).toArray() : [],
     [activeProject?.id], []
   );
@@ -101,6 +164,10 @@ export default function Dashboard() {
   );
   const phases = useLiveQuery(
     () => activeProject ? db.phases.where('projectId').equals(activeProject.id).sortBy('order') : [],
+    [activeProject?.id], []
+  );
+  const vendors = useLiveQuery(
+    () => activeProject ? db.vendors.where('projectId').equals(activeProject.id).toArray() : [],
     [activeProject?.id], []
   );
   const isDemo = useLiveQuery(() => db.settings.get('isDemo'), [], null);
@@ -148,23 +215,66 @@ export default function Dashboard() {
   const pct       = budget > 0 ? (totalSpent / budget) * 100 : 0;
   const ringColor = pct > 90 ? '#F87171' : pct > 70 ? '#FBBF24' : '#10B981';
 
-  const today    = getToday();
-  const weekAgo  = getDaysAgo(7);
-  const monthAgo = getDaysAgo(30);
-  const todaySpent = paidExpenses.filter(e => e.date === today).reduce((s, e) => s + e.amount, 0);
-  const weekSpent  = paidExpenses.filter(e => e.date >= weekAgo).reduce((s, e) => s + e.amount, 0);
-  const monthSpent = paidExpenses.filter(e => e.date >= monthAgo).reduce((s, e) => s + e.amount, 0);
+  const today     = getToday();
+  const weekAgo   = getDaysAgo(7);
+  const twoWksAgo = getDaysAgo(14);
+  const monthAgo  = getDaysAgo(30);
+
+  const todaySpent    = paidExpenses.filter(e => e.date === today).reduce((s, e) => s + e.amount, 0);
+  const weekSpent     = paidExpenses.filter(e => e.date >= weekAgo).reduce((s, e) => s + e.amount, 0);
+  const lastWeekSpent = paidExpenses.filter(e => e.date >= twoWksAgo && e.date < weekAgo).reduce((s, e) => s + e.amount, 0);
+  const monthSpent    = paidExpenses.filter(e => e.date >= monthAgo).reduce((s, e) => s + e.amount, 0);
+
+  const thisWeekEntries = paidExpenses.filter(e => e.date >= weekAgo).length;
+
+  // Velocity: % change this week vs last week
+  const velocityPct = lastWeekSpent > 0
+    ? Math.round(((weekSpent - lastWeekSpent) / lastWeekSpent) * 100)
+    : null;
+  const velocityUp = velocityPct !== null && velocityPct > 0;
+
+  // Top vendors by total spend
+  const vendorTotals = paidExpenses.filter(e => e.vendorId).reduce((acc, e) => {
+    acc[e.vendorId] = (acc[e.vendorId] || 0) + e.amount;
+    return acc;
+  }, {});
+  const topVendors = (vendors || [])
+    .filter(v => vendorTotals[v.id] > 0)
+    .sort((a, b) => (vendorTotals[b.id] || 0) - (vendorTotals[a.id] || 0))
+    .slice(0, 3);
+
+  // Budget at risk: if spending at current weekly rate will exceed budget in ~4 weeks
+  const weeklyBurnRate = weekSpent / 7;
+  const projectedNextMonth = totalSpent + weeklyBurnRate * 28;
+  const showBudgetRisk = budget > 0 && weeklyBurnRate > 0 && projectedNextMonth > budget && remaining > 0;
+  const projectedOverrun = Math.round(projectedNextMonth - budget);
+
+  // Construction Health Score (0–100)
+  const donePhases  = phases.filter(p => p.status === 'done').length;
+  const progressPct = phases.length > 0 ? Math.round((donePhases / phases.length) * 100) : 0;
+  const phaseDonePct   = phases.length > 0 ? donePhases / phases.length : 0.5;
+  const pendingDebtPct = expenses.length > 0 ? pendingExpenses.length / expenses.length : 0;
+  const budgetPct      = budget > 0 ? Math.max(0, remaining / budget) : 0.5;
+  const activityScore  = Math.min(1, thisWeekEntries / 3);
+  const healthScore    = (
+    phaseDonePct * 30 +
+    (1 - pendingDebtPct) * 20 +
+    budgetPct * 30 +
+    activityScore * 20
+  );
+  // Only show health score when there's meaningful data
+  const showHealthScore = expenses.length >= 3 || phases.length > 0;
 
   const categoryBreakdown = groupByCategory(paidExpenses, categories);
   const recentExpenses    = [...paidExpenses].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id).slice(0, 5);
 
-  const activePhase  = phases.find(p => p.status === 'active');
-  const donePhases   = phases.filter(p => p.status === 'done').length;
-  const progressPct  = phases.length > 0 ? Math.round((donePhases / phases.length) * 100) : 0;
-  const costPerSqft  = sqft > 0 ? Math.round(totalSpent / sqft) : null;
+  const activePhase   = phases.find(p => p.status === 'active');
+  const costPerSqft   = sqft > 0 ? Math.round(totalSpent / sqft) : null;
 
   const highestExpense = [...paidExpenses].sort((a, b) => b.amount - a.amount)[0];
   const highestCat     = highestExpense ? categories.find(c => c.id === highestExpense.categoryId) : null;
+
+  const isFreshProject = expenses.length === 0;
 
   return (
     <div className="page dashboard">
@@ -174,7 +284,7 @@ export default function Dashboard() {
           <div className="dash-title">Ghar Kharcha</div>
           <ProjectSwitcher />
         </div>
-        <Link to="/settings" className="header-action">
+        <Link to="/settings" className="header-action" aria-label="Settings">
           <Settings size={18} strokeWidth={2} />
         </Link>
       </div>
@@ -185,7 +295,10 @@ export default function Dashboard() {
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Building2 size={14} /> Viewing sample data
           </span>
-          <button onClick={() => setConfirmExit(true)} className="demo-exit-btn">Start Fresh</button>
+          <button onClick={() => setConfirmExit(true)} className="demo-exit-btn"
+            title="Clears sample data and starts your real project">
+            Start Fresh
+          </button>
         </motion.div>
       )}
 
@@ -234,6 +347,7 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
+              {showHealthScore && <HealthBadge score={healthScore} />}
             </div>
           </motion.div>
         ) : (
@@ -245,13 +359,36 @@ export default function Dashboard() {
                 &#8377;{costPerSqft.toLocaleString('en-IN')}/sqft
               </div>
             )}
-            <Link to="/settings" className="set-budget-btn" style={{ position: 'relative', zIndex: 1 }}>
+            {showHealthScore && (
+              <div style={{ display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
+                <HealthBadge score={healthScore} />
+              </div>
+            )}
+            <Link to="/settings" className="set-budget-btn" style={{ position: 'relative', zIndex: 1, marginTop: 12 }}>
               Set a budget <ArrowRight size={13} />
             </Link>
           </div>
         )}
       </motion.div>
 
+      {/* Budget at Risk banner */}
+      {showBudgetRisk && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+          className="budget-risk-banner"
+        >
+          <Zap size={15} style={{ flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: 13 }}>Budget at Risk</div>
+            <div style={{ fontSize: 12, opacity: 0.85, marginTop: 1 }}>
+              At this week's burn rate, projected overrun: <strong>{formatCompact(projectedOverrun)}</strong>
+            </div>
+          </div>
+          <Link to="/settings" style={{ fontSize: 11, fontWeight: 700, color: 'inherit', textDecoration: 'underline', flexShrink: 0 }}>
+            Review
+          </Link>
+        </motion.div>
+      )}
 
       {/* Phase progress */}
       {phases.length > 0 && (
@@ -283,23 +420,94 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {/* Stat row */}
+      {/* Stat row — tappable */}
       <motion.div
         className="stat-row"
         variants={listVariants} initial="hidden" animate="show"
+        role="list"
       >
         {[
-          { icon: <Calendar size={16} strokeWidth={2} />, color: 'rgba(59,130,246,.12)', iconColor: '#3B82F6', value: formatCompact(todaySpent), label: 'Today' },
-          { icon: <TrendingUp size={16} strokeWidth={2} />, color: 'var(--gold-dim)', iconColor: 'var(--gold)', value: formatCompact(weekSpent), label: 'This Week' },
-          { icon: <ReceiptText size={16} strokeWidth={2} />, color: 'var(--green-dim)', iconColor: 'var(--green)', value: paidExpenses.length, label: 'Entries' },
+          {
+            icon: <Calendar size={16} strokeWidth={2} />,
+            color: 'rgba(59,130,246,.12)', iconColor: '#3B82F6',
+            value: formatCompact(todaySpent), label: 'Today',
+            to: '/expenses', state: { filter: 'today' },
+          },
+          {
+            icon: <TrendingUp size={16} strokeWidth={2} />,
+            color: 'var(--gold-dim)', iconColor: 'var(--gold)',
+            value: formatCompact(weekSpent), label: 'This Week',
+            to: '/expenses', state: { filter: 'week' },
+          },
+          {
+            icon: <ReceiptText size={16} strokeWidth={2} />,
+            color: 'var(--green-dim)', iconColor: 'var(--green)',
+            value: paidExpenses.length, label: 'Entries',
+            to: '/expenses', state: { filter: null },
+          },
         ].map(s => (
-          <motion.div key={s.label} variants={itemVariants} className="stat-card">
-            <div className="stat-icon" style={{ background: s.color, color: s.iconColor }}>{s.icon}</div>
-            <div className="stat-value mono-number">{s.value}</div>
-            <div className="stat-label">{s.label}</div>
+          <motion.div key={s.label} variants={itemVariants} role="listitem" style={{ flex: 1 }}>
+            <Link
+              to={s.to}
+              state={s.state}
+              className="stat-card"
+              style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
+            >
+              <div className="stat-icon" style={{ background: s.color, color: s.iconColor }}>{s.icon}</div>
+              <div className="stat-value mono-number">{s.value}</div>
+              <div className="stat-label">{s.label}</div>
+            </Link>
           </motion.div>
         ))}
       </motion.div>
+
+      {/* Spending Velocity row */}
+      {(weekSpent > 0 || lastWeekSpent > 0) && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
+          className="velocity-row"
+        >
+          <div className="velocity-card">
+            <div className="velocity-label">This Week</div>
+            <div className="velocity-amount">{formatCompact(weekSpent)}</div>
+            {velocityPct !== null && (
+              <div className={`velocity-trend ${velocityUp ? 'up' : 'down'}`}>
+                {velocityUp ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                {Math.abs(velocityPct)}% vs last week
+              </div>
+            )}
+          </div>
+          <div className="velocity-card">
+            <div className="velocity-label">Last Week</div>
+            <div className="velocity-amount">{formatCompact(lastWeekSpent)}</div>
+            <div className="velocity-trend neutral">{paidExpenses.filter(e => e.date >= getDaysAgo(14) && e.date < weekAgo).length} entries</div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Top Vendors mini-strip */}
+      {topVendors.length > 0 && (
+        <motion.section
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}
+          className="section" style={{ marginBottom: 16 }}
+        >
+          <div className="section-header">
+            <div className="section-title">Top Vendors</div>
+            <Link to="/vendors" className="see-all-link">View all <ArrowRight size={12} /></Link>
+          </div>
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
+            {topVendors.map(v => (
+              <Link key={v.id} to="/vendors" className="vendor-mini-card">
+                <div className="vendor-mini-icon">
+                  <Store size={14} color="var(--accent)" />
+                </div>
+                <div className="vendor-mini-name">{v.name}</div>
+                <div className="vendor-mini-amount">{formatCompact(vendorTotals[v.id])}</div>
+              </Link>
+            ))}
+          </div>
+        </motion.section>
+      )}
 
       {/* Category breakdown */}
       {categoryBreakdown.length > 0 && (
@@ -401,19 +609,41 @@ export default function Dashboard() {
             <Link to="/expenses" className="see-all-link">View all <ArrowRight size={12} /></Link>
           )}
         </div>
-        {recentExpenses.length === 0 ? (
+
+        {isFreshProject ? (
+          /* Empty state for truly fresh project — 3 quick actions */
+          <div className="fresh-empty-state">
+            <div className="fresh-empty-icon">
+              <Building2 size={32} strokeWidth={1.5} />
+            </div>
+            <h3 className="fresh-empty-title">Ready to start tracking</h3>
+            <p className="fresh-empty-desc">Log your first expense, add a vendor, or set your budget to get started.</p>
+            <div className="fresh-empty-actions">
+              <Link to="/add" className="fresh-action-btn primary">
+                <Plus size={15} /> Add Expense
+              </Link>
+              <Link to="/vendors" className="fresh-action-btn secondary">
+                <Users size={15} /> Add Vendor
+              </Link>
+              <Link to="/settings" className="fresh-action-btn secondary">
+                <Settings size={15} /> Set Budget
+              </Link>
+            </div>
+          </div>
+        ) : recentExpenses.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon"><HardHat size={26} /></div>
-            <h3>No expenses yet</h3>
-            <p>Tap the + button to log your first construction cost</p>
+            <h3>No paid expenses yet</h3>
+            <p>Mark pending payments as paid, or add a new expense</p>
             <Link to="/add" className="btn btn-primary btn-lg" style={{ marginTop: 8 }}>
-              <Plus size={17} /> Add First Expense
+              <Plus size={17} /> Add Expense
             </Link>
           </div>
         ) : (
           <motion.div className="expense-list" variants={listVariants} initial="hidden" animate="show">
             {recentExpenses.map(exp => {
-              const cat = categories.find(c => c.id === exp.categoryId);
+              const cat    = categories.find(c => c.id === exp.categoryId);
+              const vendor = vendors?.find(v => v.id === exp.vendorId);
               return (
                 <motion.div key={exp.id} variants={itemVariants}>
                   <Link to={`/edit/${exp.id}`} className="expense-item">
@@ -421,7 +651,10 @@ export default function Dashboard() {
                       {cat?.icon || '?'}
                     </div>
                     <div className="expense-details">
-                      <div className="expense-cat">{cat?.name || 'Unknown'}</div>
+                      <div className="expense-cat">
+                        {cat?.name || 'Unknown'}
+                        {vendor && <span className="expense-vendor-tag"> · {vendor.name}</span>}
+                      </div>
                       <div className="expense-note">{exp.note || formatDateLabel(exp.date)}</div>
                     </div>
                     <div className="expense-amount">{formatCurrency(exp.amount)}</div>

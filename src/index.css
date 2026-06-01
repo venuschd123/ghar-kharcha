@@ -1438,3 +1438,116 @@ select.form-input {
   from { opacity: 0; transform: perspective(800px) translateY(12px) rotateX(3deg) scale(.98); }
   to   { opacity: 1; transform: perspective(800px) translateY(0)  rotateX(0deg) scale(1); }
 }
+
+/* ══════════════════════════════════════════════════════════
+   DASHBOARD ENHANCEMENTS — June 2026
+   ══════════════════════════════════════════════════════════ */
+
+/* Budget at Risk banner */
+.budget-risk-banner {
+  margin:0 var(--px) 12px;
+  background: rgba(245,158,11,.12);
+  border: 1px solid rgba(245,158,11,.3);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 13px; color: #FBBF24;
+}
+[data-theme="dark"] .budget-risk-banner { background: rgba(245,158,11,.09); }
+
+/* Spending Velocity row */
+.velocity-row {
+  display: flex; gap: 10px;
+  padding: 0 var(--px) 12px;
+}
+.velocity-card {
+  flex: 1;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: 13px 12px;
+  box-shadow: var(--shadow-sm);
+}
+.velocity-label {
+  font-size: 10px; font-weight: 700; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px;
+}
+.velocity-amount {
+  font-size: 17px; font-weight: 800; color: var(--text);
+  letter-spacing: -.3px; font-variant-numeric: tabular-nums; margin-bottom: 4px;
+}
+.velocity-trend {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 700;
+}
+.velocity-trend.up   { color: #F87171; }
+.velocity-trend.down { color: #10B981; }
+.velocity-trend.neutral { color: var(--text-3); }
+
+/* Top Vendors mini-cards */
+.vendor-mini-card {
+  flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: 12px 14px; min-width: 100px;
+  box-shadow: var(--shadow-sm); text-decoration: none;
+  transition: all var(--dur) var(--ease-out);
+}
+.vendor-mini-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.vendor-mini-icon {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--accent-dim); border: 1px solid var(--accent-border);
+  display: flex; align-items: center; justify-content: center;
+}
+.vendor-mini-name {
+  font-size: 12px; font-weight: 700; color: var(--text);
+  text-align: center; max-width: 90px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.vendor-mini-amount {
+  font-size: 13px; font-weight: 800; color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Expense vendor tag in recent list */
+.expense-vendor-tag {
+  font-size: 12px; font-weight: 500; color: var(--text-3);
+}
+
+/* Fresh empty state (new project) */
+.fresh-empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 32px var(--px) 24px; text-align: center; gap: 12px;
+  background: var(--bg-card); border: 1px dashed var(--border-mid);
+  border-radius: var(--r-xl); margin: 0 0 12px;
+}
+.fresh-empty-icon {
+  width: 72px; height: 72px; border-radius: var(--r-xl);
+  background: var(--accent-dim); border: 1px solid var(--accent-border);
+  display: flex; align-items: center; justify-content: center; color: var(--accent);
+}
+.fresh-empty-title {
+  font-size: 18px; font-weight: 800; color: var(--text);
+  letter-spacing: -.3px; margin: 0;
+}
+.fresh-empty-desc {
+  font-size: 13px; color: var(--text-2); max-width: 260px;
+  line-height: 1.6; margin: 0;
+}
+.fresh-empty-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 4px;
+}
+.fresh-action-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 16px; border-radius: var(--r-pill);
+  font-size: 13px; font-weight: 700; text-decoration: none;
+  transition: all var(--dur-fast);
+}
+.fresh-action-btn.primary {
+  background: var(--accent); color: #fff;
+  box-shadow: 0 3px 10px var(--accent-glow);
+}
+.fresh-action-btn.primary:hover { opacity: .9; }
+.fresh-action-btn.secondary {
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border);
+}
+.fresh-action-btn.secondary:hover { background: var(--surface-2); }
