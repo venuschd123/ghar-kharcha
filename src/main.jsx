@@ -88,7 +88,7 @@ function App() {
       <div className="app-splash">
         <div className="splash-icon"><Building2 size={52} strokeWidth={1.5} /></div>
         <div className="splash-wordmark">Ghar Kharcha</div>
-        <div className="splash-sub">Construction Cost Tracker</div>
+        <div className="splash-sub">Home Construction Tracker</div>
         <div className="splash-spinner" />
       </div>
     );
