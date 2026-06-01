@@ -1,9 +1,11 @@
 import { Delete } from 'lucide-react';
+import { motion } from 'motion/react';
 
 const KEYS = ['1','2','3','4','5','6','7','8','9','.','0','⌫'];
 
 export default function Numpad({ value, onChange }) {
   const handle = (key) => {
+    navigator.vibrate?.(8);
     if (key === '⌫') { onChange(value.slice(0, -1)); return; }
     if (key === '.' && value.includes('.')) return;
     if (key === '.' && value === '') { onChange('0.'); return; }
@@ -15,15 +17,17 @@ export default function Numpad({ value, onChange }) {
   };
 
   return (
-    <div className="numpad">
+    <div className="numpad-v2">
       {KEYS.map(key => (
-        <button
+        <motion.button
           key={key}
-          className={`numpad-key${key === '.' ? ' numpad-action' : ''}${key === '⌫' ? ' numpad-delete' : ''}`}
-          onPointerDown={e => { e.preventDefault(); navigator.vibrate?.(8); handle(key); }}
+          className={`numpad-key-v2${key === '.' ? ' action' : ''}${key === '⌫' ? ' delete-key' : ''}`}
+          onPointerDown={e => { e.preventDefault(); handle(key); }}
+          whileTap={{ scale: 0.92, backgroundColor: 'var(--surface-2)' }}
+          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
         >
           {key === '⌫' ? <Delete size={20} strokeWidth={2} /> : key}
-        </button>
+        </motion.button>
       ))}
     </div>
   );

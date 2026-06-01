@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { getToday, getYesterday, formatCurrency, formatDateShort } from '../utils/formatters';
-import { ArrowLeft, Camera, Trash2, Check, ChevronDown, Clock, Copy, Mic, ScanLine } from 'lucide-react';
+import { ArrowLeft, Camera, Trash2, Check, ChevronDown, Clock, Copy, Mic, ScanLine, Plus, HardHat } from 'lucide-react';
+import { motion } from 'motion/react';
 import Numpad from '../components/Numpad';
 import { useToast } from '../components/Toast';
 import { isVoiceSupported, startVoiceRecognition, parseSpokenAmount, parseSpokenCategory } from '../utils/voiceInput';
@@ -259,23 +260,34 @@ export default function AddExpense() {
         </div>
       </div>
 
-      {/* Category scroll */}
-      <div className="cat-scroll-wrap">
-        <div className="cat-scroll">
-          {categories.map(cat => (
-            <button
+      {/* Category grid — 4-column premium cards */}
+      <div className="cat-grid-wrap">
+        <div className="cat-grid">
+          {categories.map((cat, i) => (
+            <motion.button
               key={cat.id}
-              className={`cat-pill${categoryId === cat.id ? ' active' : ''}`}
+              className={`cat-card${categoryId === cat.id ? ' active' : ''}`}
               onClick={() => setCategoryId(cat.id)}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.02, duration: 0.22, ease: [0.16,1,0.3,1] }}
+              whileTap={{ scale: 0.93 }}
             >
-              <span className="cat-pill-icon">{cat.icon}</span>
-              <span>{cat.name.split(' ')[0]}</span>
-            </button>
+              <div className="cat-card-icon-wrap">{cat.icon}</div>
+              <span className="cat-card-label">{cat.name.split(' ')[0]}</span>
+            </motion.button>
           ))}
-          <button className="cat-pill cat-pill-add" onClick={() => setShowAddCategory(true)}>
-            <span className="cat-pill-icon">+</span>
-            <span>Add</span>
-          </button>
+          <motion.button
+            className="cat-card"
+            style={{ borderColor: 'var(--accent-border)', background: 'var(--accent-dim)' }}
+            onClick={() => setShowAddCategory(true)}
+            whileTap={{ scale: 0.93 }}
+          >
+            <div className="cat-card-icon-wrap" style={{ background: 'var(--accent)', color: '#fff' }}>
+              <Plus size={16} strokeWidth={2.5} />
+            </div>
+            <span className="cat-card-label" style={{ color: 'var(--accent)' }}>New</span>
+          </motion.button>
         </div>
       </div>
 
@@ -288,7 +300,7 @@ export default function AddExpense() {
               <span style={{ fontWeight: 600, fontSize: 13 }}>{selectedVendor.name}</span>
             </>
           ) : (
-            <span style={{ color: 'var(--text-3)', fontSize: 13 }}>👷 Assign vendor…</span>
+            <span style={{ color: 'var(--text-3)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}><HardHat size={14} /> Assign vendor…</span>
           )}
           <ChevronDown size={14} style={{ marginLeft: 'auto', color: 'var(--text-3)' }} />
         </button>
@@ -310,7 +322,7 @@ export default function AddExpense() {
             onChange={e => setPhaseId(e.target.value ? Number(e.target.value) : null)}
             style={{ padding: '9px 14px', fontSize: 13 }}
           >
-            <option value="">🔨 Link to phase (optional)</option>
+            <option value="">Link to phase (optional)</option>
             {phases.map(p => (
               <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>
             ))}
@@ -324,7 +336,7 @@ export default function AddExpense() {
         <button className={`date-chip${date === yesterday ? ' active' : ''}`} onClick={() => setDate(yesterday)}>Yest.</button>
         <div className="date-custom-wrap">
           <button className={`date-chip${date !== today && date !== yesterday ? ' active' : ''}`}>
-            {date !== today && date !== yesterday ? dateLabel : '📅'}
+            {date !== today && date !== yesterday ? dateLabel : 'Date'}
           </button>
           <input type="date" className="date-custom-input" value={date} onChange={e => setDate(e.target.value)} />
         </div>

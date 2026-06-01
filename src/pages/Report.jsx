@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'motion/react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { formatCurrency, formatCompact, groupByCategory, getDaysAgo } from '../utils/formatters';
@@ -285,19 +286,30 @@ export default function Report() {
             {categoryBreakdown.map((item, i) => {
               const pct = totalSpent > 0 ? (item.total / totalSpent) * 100 : 0;
               return (
-                <div key={i} className="report-cat-row">
+                <motion.div
+                  key={i} className="report-cat-row"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05, duration: 0.3, ease: [0.16,1,0.3,1] }}
+                >
                   <div className="report-cat-icon" style={{ background: item.category.color + '22' }}>
                     {item.category.icon}
                   </div>
                   <div className="report-cat-info">
                     <div className="report-cat-name">{item.category.name}</div>
                     <div className="report-cat-bar-track">
-                      <div className="report-cat-bar-fill" style={{ width: `${pct}%`, background: item.category.color }} />
+                      <motion.div
+                        className="report-cat-bar-fill"
+                        style={{ background: item.category.color }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ delay: 0.1 + i * 0.05, duration: 0.8, ease: [0.16,1,0.3,1] }}
+                      />
                     </div>
                     <div className="report-cat-pct">{item.count} entries · {pct.toFixed(1)}%</div>
                   </div>
                   <div><div className="report-cat-amount">{formatCurrency(item.total)}</div></div>
-                </div>
+                </motion.div>
               );
             })}
           </div>

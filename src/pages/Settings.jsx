@@ -434,40 +434,64 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Pro upgrade */}
-      <div className="settings-card" style={isPro ? { borderColor: 'var(--accent-border)' } : {}}>
-        <div className="settings-card-header">
-          <div className="settings-card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Zap size={14} color="var(--accent)" /> Ghar Kharcha Pro
-            {isPro && <span style={{ fontSize: 10, background: 'var(--accent)', color: '#fff', borderRadius: 6, padding: '2px 8px', fontWeight: 700 }}>ACTIVE</span>}
-          </div>
-        </div>
-        <div className="settings-card-body">
+      {/* Pro upgrade — premium navy card */}
+      <div className="mx-px" style={{ marginBottom: 10 }}>
+        <div className="pro-hero-card">
           {isPro ? (
-            <div style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600 }}>
-              ✓ Pro features unlocked: multi-project, Excel export, PIN lock, and more.
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 8 }}>
+                Ghar Kharcha Pro
+              </div>
+              <div className="pro-active-badge" style={{ marginBottom: 14 }}>
+                <Zap size={14} /> Pro Active
+              </div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,.55)', lineHeight: 1.5 }}>
+                All Pro features are unlocked: unlimited projects, Excel export, OCR scanning, and priority support.
+              </div>
             </div>
           ) : (
-            <>
-              <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12 }}>
-                Unlock unlimited projects, Excel export, comparison analytics, and more.
+            <div style={{ position: 'relative', zIndex: 1, width: '100%' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 6 }}>
+                Ghar Kharcha Pro
               </div>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                <div style={{ flex: 1, background: 'var(--accent-dim)', borderRadius: 12, padding: '10px 12px', border: '1px solid var(--accent-border)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase' }}>Annual</div>
-                  <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--accent)' }}>₹499</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-2)' }}>₹42/month</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-.4px', marginBottom: 16 }}>
+                Build smarter. Track better.
+              </div>
+              {[
+                'Unlimited projects',
+                'Excel export with full breakdown',
+                'OCR receipt scanning',
+                'Comparison analytics',
+              ].map(f => (
+                <div key={f} className="pro-feature-chip">
+                  <Zap size={12} />
+                  <span>{f}</span>
                 </div>
-                <div style={{ flex: 1, background: 'var(--green-dim)', borderRadius: 12, padding: '10px 12px', border: '1px solid rgba(5,150,105,0.2)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--green)', textTransform: 'uppercase' }}>Lifetime</div>
-                  <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--green)' }}>₹999</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-2)' }}>one-time</div>
+              ))}
+              <div style={{ display: 'flex', gap: 8, marginTop: 16, marginBottom: 16 }}>
+                <div className="pro-price-pill accent">
+                  <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Annual</div>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--accent)', lineHeight: 1.1 }}>499</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)' }}>/ year</div>
+                </div>
+                <div className="pro-price-pill">
+                  <div style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,.5)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Lifetime</div>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>999</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)' }}>one-time</div>
                 </div>
               </div>
-              <button className="btn btn-primary btn-full" onClick={() => setShowUpgrade(true)}>
-                <Zap size={14} /> Upgrade to Pro
+              <button
+                onClick={() => setShowUpgrade(true)}
+                style={{
+                  width: '100%', height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
+                  background: 'var(--accent)', color: '#fff', fontSize: 14, fontWeight: 700,
+                  fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(16,185,129,.4)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >
+                <Zap size={15} /> Upgrade to Pro
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
